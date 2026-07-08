@@ -1,0 +1,15 @@
+node_modules/
+dist/
+dist-electron/
+release/
+*.log
+.env
+.env.local
+models/
+engine/bin/
+engine/lib/
+engine/llama-build/
+engine/obj/
+talos-cli/bin/
+check-*.js
+fix-*.js
