@@ -1,70 +1,91 @@
-# Talos LLM Studio — Windows
+# Talos LLM Studio
 
-Desktop application for running LLM models locally on Windows, powered by `node-llama-cpp` (llama.cpp).
+**Run AI models locally on Windows — no internet, no limits, total privacy.**
 
-## Quick Start
+Talos LLM Studio is a desktop application for running language models, image generation, and more — entirely on your machine. Powered by a custom Go + llama.cpp inference engine with Ollama-compatible API.
 
-1. **Place GGUF models** in `%APPDATA%\talos-windows\models\` (or launch once to auto-create the folder)
-2. **Run** `Talos LLM Studio.exe`
-3. Select a model in the sidebar → click **Load**
-4. Chat with the model or start the API server
+---
 
 ## Features
 
-- Chat interface with streaming responses
-- OpenAI-compatible API server (`/v1/chat/completions`, `/v1/models`, `/health`)
-- Automatic discovery of `.gguf` models
-- CPU/GPU layer configuration
-- Adjustable context size, temperature, max tokens
-- API key authentication for server
+- **Local AI Inference** — Run GGUF language models with CPU, Vulkan, or CUDA acceleration
+- **Custom Engine** — High-performance Go + llama.cpp engine (`talos-engine`) with Ollama-compatible API on port 11435
+- **Talos CLI** — Pure Go command-line interface for model management (`talos-cli`)
+- **Ollama Support** — Connect to existing Ollama instances
+- **Image Generation** — Stable Diffusion 1.5 via Python diffusers (CPU/GPU)
+- **AirLLM Integration** — Low-memory inference for 70B+ models on limited VRAM
+- **HuggingFace Browser** — Search and download models directly from HuggingFace
+- **Multi-language UI** — English, Portuguese, Spanish, French, German, Chinese, Japanese, Korean, Russian, Arabic
+- **OpenAI-Compatible API** — `/v1/chat/completions`, `/v1/models`, `/health`
+- **File Attachments** — Attach images and files to chat
+- **Guardrails** — Automatic model loading protection based on hardware
+- **Encrypted Conversations** — Local encryption via Windows DPAPI
+
+---
+
+## Quick Start
+
+1. Install from Microsoft Store or download the installer
+2. Place GGUF models in the models directory (auto-detected on startup)
+3. Select a model → click **Load** → start chatting
+
+---
+
+## Inference Backends
+
+| Backend | Description |
+|---------|-------------|
+| **Talos Engine** | Custom Go + llama.cpp engine, fastest performance |
+| **Talos CLI** | Pure Go CLI, communicates with engine via HTTP |
+| **Ollama** | External Ollama server integration |
+
+---
 
 ## Development
 
 ```bash
-cd talos-windows
 npm install
-npx vite        # starts Vite dev server + Electron
+npm run dev        # Vite dev server + Electron
+npm run build      # Build installers (APPX + NSIS)
+npm run build:dir  # Build unpacked directory
 ```
 
-Build a portable EXE:
+---
 
-```bash
-npm run build
-```
+## Tech Stack
 
-Output in `release/Talos LLM Studio 1.0.0.exe`
+- **Frontend**: React + TypeScript + Vite
+- **Backend**: Electron + Express API
+- **Engine**: Go + llama.cpp (CGo static build)
+- **CLI**: Pure Go (no CGo)
+- **Image Gen**: Python + diffusers
+- **Payments**: Ghost Pay SDK
 
-## API Server
-
-Start the server in the **Servidor** tab. Default:
-
-```
-http://localhost:1234/v1/chat/completions
-```
-
-Default API key: `talos-key-secret`
-
-Set `Authorization: Bearer talos-key-secret` header to authenticate.
-
-## Models
-
-Place `.gguf` files in the models directory. The app scans for models recursively on launch and when "Refresh" is clicked.
+---
 
 ## Requirements
 
 - Windows 10/11 x64
 - 4GB+ RAM (8GB+ recommended)
-- ~2GB free disk for app + model storage
+- Python 3.11+ (for image generation and AirLLM)
+
+---
+
+## License
+
+MIT License — See [LICENSE](LICENSE) for details.
+
+---
 
 ## Acceptable Use Policy
 
 This software is provided **exclusively** for personal, educational, and research purposes. The following uses are **strictly prohibited**:
 
-- **Mass surveillance**: Using this software to monitor, track, or surveil individuals or groups at scale, whether through direct observation, automated profiling, or any form of bulk data collection.
-- **User data analysis**: Collecting, aggregating, or analyzing user interactions, conversations, or behavioral data for profiling, scoring, or decision-making purposes.
-- **Law enforcement or intelligence operations**: Deploying this software as part of any surveillance apparatus, predictive policing system, or intelligence-gathering operation without the explicit informed consent of all affected individuals.
+- **Mass surveillance**: Using this software to monitor, track, or surveil individuals or groups at scale.
+- **User data analysis**: Collecting, aggregating, or analyzing user interactions for profiling or decision-making.
+- **Law enforcement or intelligence operations**: Deploying as part of any surveillance apparatus without explicit informed consent.
 - **Workplace or educational surveillance**: Monitoring employees, students, or any individuals without their knowledge and explicit consent.
 
-All models run **entirely locally** on the user's device. This software does not transmit, collect, or share any user data with external servers. Any modification that adds telemetry, data exfiltration, or remote monitoring capabilities is a violation of this policy and the spirit of the project.
+All models run **entirely locally** on the user's device. This software does not transmit, collect, or share any user data with external servers.
 
 By using this software, you agree to respect the privacy and dignity of all individuals.
