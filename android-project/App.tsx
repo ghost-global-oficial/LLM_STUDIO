@@ -1,12 +1,13 @@
 import React from 'react';
-import { StyleSheet, View, StatusBar, Text, TouchableOpacity, Platform } from 'react-native';
+import { StyleSheet, View, StatusBar, Platform } from 'react-native';
 import { NavigationContainer, DarkTheme, DefaultTheme } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { FolderOpen, MessageCircle, Server, Zap, FileText, Settings, X, CloudDownload } from 'lucide-react-native';
+import { FolderOpen, MessageCircle, Server, Zap, FileText, Settings } from 'lucide-react-native';
 
 import { ThemeProvider, useTheme } from './src/context/ThemeContext';
-import { DownloadProvider, useDownload } from './src/context/DownloadContext';
+import { DownloadProvider } from './src/context/DownloadContext';
+import { SettingsProvider, useSettings } from './src/context/SettingsContext';
 import ModelsScreen from './src/screens/ModelsScreen';
 import ChatScreen from './src/screens/ChatScreen';
 import ServerScreen from './src/screens/ServerScreen';
@@ -14,8 +15,10 @@ import SkillsScreen from './src/screens/SkillsScreen';
 import DocsScreen from './src/screens/DocsScreen';
 import SettingsScreen from './src/screens/SettingsScreen';
 import DownloadScreen from './src/screens/DownloadScreen';
+import WelcomeScreen from './src/screens/WelcomeScreen';
 
 export type RootStackParamList = {
+  Welcome: undefined;
   MainTabs: undefined;
   Chat: { fileUri: string; fileName: string };
   Download: undefined;
@@ -33,37 +36,6 @@ export type MainTabParamList = {
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 const Tab = createBottomTabNavigator<MainTabParamList>();
-
-function DownloadBanner() {
-  const { activeDownload, cancelDownload } = useDownload();
-  const { isDark } = useTheme();
-
-  if (!activeDownload || activeDownload.status === 'completed' || activeDownload.status === 'error' || activeDownload.status === 'cancelled') return null;
-
-  const bgColor = isDark ? '#1A1A2E' : '#E8F0FE';
-  const textColor = isDark ? '#FFF' : '#000';
-  const subColor = isDark ? '#888' : '#666';
-
-  return (
-    <View style={[styles.banner, { backgroundColor: bgColor, borderBottomColor: isDark ? '#333' : '#D0D0D0' }]}>
-      <View style={styles.bannerContent}>
-        <CloudDownload size={18} color="#007AFF" />
-        <View style={{ flex: 1, marginLeft: 10 }}>
-          <Text style={[styles.bannerTitle, { color: textColor }]} numberOfLines={1}>{activeDownload.name}</Text>
-          <View style={styles.bannerProgressRow}>
-            <View style={[styles.bannerProgressBar, { backgroundColor: isDark ? '#333' : '#D0D0D0' }]}>
-              <View style={[styles.bannerProgressFill, { width: `${activeDownload.progress * 100}%` }]} />
-            </View>
-            <Text style={[styles.bannerPercent, { color: subColor }]}>{Math.round(activeDownload.progress * 100)}%</Text>
-          </View>
-        </View>
-        <TouchableOpacity onPress={cancelDownload} style={styles.bannerClose}>
-          <X size={16} color={subColor} />
-        </TouchableOpacity>
-      </View>
-    </View>
-  );
-}
 
 const MyDarkTheme = {
   ...DarkTheme,
@@ -186,16 +158,22 @@ function MainTabs() {
 
 function AppNavigator() {
   const { isDark } = useTheme();
+  const { welcomeSeen } = useSettings();
 
   return (
     <NavigationContainer theme={isDark ? MyDarkTheme : MyLightTheme}>
       <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor={isDark ? '#0F0F0F' : '#F5F5F5'} />
-      <DownloadBanner />
       <Stack.Navigator screenOptions={{ headerShown: false, contentStyle: { backgroundColor: isDark ? '#0F0F0F' : '#F5F5F5' } }}>
-        <Stack.Screen name="MainTabs" component={MainTabs} />
-        <Stack.Screen name="Download" component={DownloadScreen} options={{ animation: 'slide_from_bottom' }} />
-        <Stack.Screen name="Chat" component={ChatScreen} options={{ animation: 'slide_from_right' }} />
-        <Stack.Screen name="Settings" component={SettingsScreen} options={{ animation: 'slide_from_right' }} />
+        {!welcomeSeen ? (
+          <Stack.Screen name="Welcome" component={WelcomeScreen} />
+        ) : (
+          <>
+            <Stack.Screen name="MainTabs" component={MainTabs} />
+            <Stack.Screen name="Download" component={DownloadScreen} options={{ animation: 'slide_from_bottom' }} />
+            <Stack.Screen name="Chat" component={ChatScreen} options={{ animation: 'slide_from_right' }} />
+            <Stack.Screen name="Settings" component={SettingsScreen} options={{ animation: 'slide_from_right' }} />
+          </>
+        )}
       </Stack.Navigator>
     </NavigationContainer>
   );
@@ -204,53 +182,13 @@ function AppNavigator() {
 export default function App() {
   return (
     <ThemeProvider>
-      <DownloadProvider>
-        <AppNavigator />
-      </DownloadProvider>
+      <SettingsProvider>
+        <DownloadProvider>
+          <AppNavigator />
+        </DownloadProvider>
+      </SettingsProvider>
     </ThemeProvider>
   );
 }
 
-const styles = StyleSheet.create({
-  banner: {
-    borderBottomWidth: 1,
-    paddingTop: Platform.OS === 'ios' ? 50 : 36,
-    paddingBottom: 10,
-    paddingHorizontal: 16,
-  },
-  bannerContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  bannerTitle: {
-    fontSize: 13,
-    fontWeight: '600',
-    marginBottom: 4,
-  },
-  bannerProgressRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  bannerProgressBar: {
-    flex: 1,
-    height: 4,
-    borderRadius: 2,
-    overflow: 'hidden',
-    marginRight: 8,
-  },
-  bannerProgressFill: {
-    height: '100%',
-    backgroundColor: '#007AFF',
-    borderRadius: 2,
-  },
-  bannerPercent: {
-    fontSize: 11,
-    fontWeight: '600',
-    minWidth: 35,
-    textAlign: 'right',
-  },
-  bannerClose: {
-    marginLeft: 10,
-    padding: 6,
-  },
-});
+const styles = StyleSheet.create({});

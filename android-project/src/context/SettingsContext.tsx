@@ -10,6 +10,8 @@ interface SettingsContextType {
   setLanguage: (lang: Language) => void;
   systemPrompt: string;
   setSystemPrompt: (prompt: string) => void;
+  welcomeSeen: boolean;
+  setWelcomeSeen: (seen: boolean) => void;
 }
 
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
@@ -52,6 +54,7 @@ function getDeviceLanguage(): Language {
 export function SettingsProvider({ children }: { children: React.ReactNode }) {
   const [language, setLanguageState] = useState<Language>(getDeviceLanguage());
   const [systemPrompt, setSystemPromptState] = useState(DEFAULT_SYSTEM_PROMPT);
+  const [welcomeSeen, setWelcomeSeenState] = useState(false);
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
@@ -67,6 +70,9 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
           if (settings.systemPrompt) {
             setSystemPromptState(settings.systemPrompt);
           }
+          if (settings.welcomeSeen) {
+            setWelcomeSeenState(true);
+          }
         }
       } catch (e) {
         console.log('Error loading settings', e);
@@ -78,11 +84,11 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (loaded) {
-      RNFS.writeFile(SETTINGS_FILE, JSON.stringify({ language, systemPrompt }), 'utf8').catch(e =>
+      RNFS.writeFile(SETTINGS_FILE, JSON.stringify({ language, systemPrompt, welcomeSeen }), 'utf8').catch(e =>
         console.log('Error saving settings', e)
       );
     }
-  }, [language, systemPrompt, loaded]);
+  }, [language, systemPrompt, welcomeSeen, loaded]);
 
   const setLanguage = (lang: Language) => {
     setLanguageState(lang);
@@ -92,8 +98,12 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
     setSystemPromptState(prompt);
   };
 
+  const setWelcomeSeen = (seen: boolean) => {
+    setWelcomeSeenState(seen);
+  };
+
   return (
-    <SettingsContext.Provider value={{ language, setLanguage, systemPrompt, setSystemPrompt }}>
+    <SettingsContext.Provider value={{ language, setLanguage, systemPrompt, setSystemPrompt, welcomeSeen, setWelcomeSeen }}>
       {children}
     </SettingsContext.Provider>
   );
