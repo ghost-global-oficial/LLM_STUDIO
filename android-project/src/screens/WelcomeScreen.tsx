@@ -47,7 +47,7 @@ export default function WelcomeScreen({ navigation }: WelcomeScreenProps) {
       return (
         <View style={[styles.page, { width }]}>
           <View style={styles.logoContainer}>
-            <Image source={require('../../assets/icon.png')} style={styles.logoImage} resizeMode="contain" />
+            <Image source={require('../../assets/logo.png')} style={styles.logoImage} resizeMode="contain" />
           </View>
           <Text style={[styles.welcomeTitle, { color: textColor }]}>{t('welcomeTitle')}</Text>
           <Text style={[styles.welcomeDesc, { color: secondaryText }]}>{t('welcomeDesc')}</Text>
