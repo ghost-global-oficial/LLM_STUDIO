@@ -1,6 +1,6 @@
 import React, { useRef, useState } from 'react';
-import { StyleSheet, Text, View, TouchableOpacity, Dimensions, Animated } from 'react-native';
-import { Cpu, Server, Zap, ChevronRight } from 'lucide-react-native';
+import { StyleSheet, Text, View, TouchableOpacity, Dimensions, Animated, Image } from 'react-native';
+import { Cpu, Server, Zap, ChevronRight, X } from 'lucide-react-native';
 import { useTheme } from '../context/ThemeContext';
 import { useSettings, useTranslation } from '../context/SettingsContext';
 
@@ -47,9 +47,7 @@ export default function WelcomeScreen({ navigation }: WelcomeScreenProps) {
       return (
         <View style={[styles.page, { width }]}>
           <View style={styles.logoContainer}>
-            <View style={[styles.logoCircle, { backgroundColor: isDark ? '#1E1E1E' : '#E8F0FE' }]}>
-              <Cpu size={64} color="#007AFF" />
-            </View>
+            <Image source={require('../../assets/icon.png')} style={styles.logoImage} resizeMode="contain" />
           </View>
           <Text style={[styles.welcomeTitle, { color: textColor }]}>{t('welcomeTitle')}</Text>
           <Text style={[styles.welcomeDesc, { color: secondaryText }]}>{t('welcomeDesc')}</Text>
@@ -136,7 +134,7 @@ export default function WelcomeScreen({ navigation }: WelcomeScreenProps) {
           onPress={handleNext}
         >
           {isLastPage ? (
-            <Text style={[styles.nextButtonText, { color: isDark ? '#000' : '#FFF' }]}>{t('welcomeStart')}</Text>
+            <X size={24} color={isDark ? '#000' : '#FFF'} />
           ) : (
             <ChevronRight size={24} color={isDark ? '#000' : '#FFF'} />
           )}
@@ -152,7 +150,7 @@ const styles = StyleSheet.create({
   skipText: { fontSize: 16, fontWeight: '500' },
   page: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 30 },
   logoContainer: { marginBottom: 40 },
-  logoCircle: { width: 140, height: 140, borderRadius: 70, alignItems: 'center', justifyContent: 'center' },
+  logoImage: { width: 140, height: 140 },
   welcomeTitle: { fontSize: 28, fontWeight: 'bold', textAlign: 'center', marginBottom: 16 },
   welcomeDesc: { fontSize: 16, textAlign: 'center', lineHeight: 24, paddingHorizontal: 10 },
   featureCard: { width: '100%', borderRadius: 24, padding: 40, alignItems: 'center', borderWidth: 1 },
