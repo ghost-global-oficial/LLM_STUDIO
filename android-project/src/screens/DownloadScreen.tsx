@@ -7,6 +7,7 @@ import { RootStackParamList } from '../../App';
 import { AVAILABLE_MODELS, AIModel } from '../data/modelsData';
 import { useTheme } from '../context/ThemeContext';
 import { useDownload } from '../context/DownloadContext';
+import { useTranslation } from '../context/SettingsContext';
 
 const MODELS_DIR = `${RNFS.DocumentDirectoryPath}/models/`;
 
@@ -15,6 +16,7 @@ type Props = NativeStackScreenProps<RootStackParamList, 'Download'>;
 export default function DownloadScreen({ navigation }: Props) {
   const { isDark } = useTheme();
   const { activeDownload, startDownload, cancelDownload } = useDownload();
+  const { t } = useTranslation();
   const [localModels, setLocalModels] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [externalResults, setExternalResults] = useState<AIModel[]>([]);
@@ -141,7 +143,7 @@ export default function DownloadScreen({ navigation }: Props) {
 
   const downloadModel = async (model: AIModel) => {
     if (!model.downloadUrl) {
-      Alert.alert('URL não encontrada', 'Não foi possível obter o link de download deste modelo. Tente outro.');
+      Alert.alert(t('urlNotFound'), t('urlNotFoundDesc'));
       return;
     }
     const safeId = model.id.replace(/\//g, '_');
@@ -169,7 +171,7 @@ export default function DownloadScreen({ navigation }: Props) {
           <Search size={18} color={placeholderColor} style={styles.searchIcon} />
           <TextInput
             style={[styles.headerSearchInput, { color: textColor }]}
-            placeholder="Buscar modelos..."
+            placeholder={t('searchModels')}
             placeholderTextColor={placeholderColor}
             value={searchQuery}
             onChangeText={setSearchQuery}
@@ -186,7 +188,7 @@ export default function DownloadScreen({ navigation }: Props) {
               <View style={styles.progressBarBg}>
                 <View style={[styles.progressBarFill, { width: `${activeDownload.progress * 100}%` }]} />
               </View>
-              <Text style={[styles.activeDownloadStatus, { color: secondaryText }]}>{Math.round(activeDownload.progress * 100)}% baixando...</Text>
+              <Text style={[styles.activeDownloadStatus, { color: secondaryText }]}>{Math.round(activeDownload.progress * 100)}% {t('downloading')}</Text>
             </View>
             <TouchableOpacity onPress={cancelDownload}>
               <X size={18} color="#FF3B30" />
@@ -202,7 +204,7 @@ export default function DownloadScreen({ navigation }: Props) {
             <View style={{ alignItems: 'center', marginTop: 40 }}>
               <ActivityIndicator size="large" color="#007AFF" animating={loadingSearch} />
               <Text style={{ color: secondaryText, marginTop: 10 }}>
-                {loadingSearch ? 'Consultando Hugging Face...' : 'Aumente o termo para buscar na nuvem...'}
+                {loadingSearch ? t('searching') : t('searchHint')}
               </Text>
             </View>
           )}
@@ -219,7 +221,7 @@ export default function DownloadScreen({ navigation }: Props) {
                 <View style={{ flex: 1, paddingRight: 15 }}>
                   <Text style={[styles.modelItemName, { color: textColor }]} numberOfLines={1}>{item.name}</Text>
                   <Text style={[styles.modelItemSize, { color: secondaryText }]}>
-                    {installed ? '✓ Baixado' : downloading ? 'Baixando...' : `Tamanho: ${item.size}`}
+                    {installed ? `✓ ${t('downloaded')}` : downloading ? t('downloading') : `${t('size')}: ${item.size}`}
                   </Text>
                 </View>
                 {installed ? <X size={24} color={secondaryText} /> : downloading ? (

@@ -1,17 +1,30 @@
-import React from 'react';
-import { StyleSheet, Text, View, TouchableOpacity, Switch, ScrollView, Linking } from 'react-native';
-import { Moon, Sun, ArrowLeft, ExternalLink } from 'lucide-react-native';
+import React, { useState } from 'react';
+import { StyleSheet, Text, View, TouchableOpacity, Switch, ScrollView, TextInput, Modal, FlatList } from 'react-native';
+import { Moon, Sun, ArrowLeft, ExternalLink, Globe, MessageSquare } from 'lucide-react-native';
 import { useTheme } from '../context/ThemeContext';
+import { useSettings, useTranslation, LANGUAGES, Language } from '../context/SettingsContext';
 
 interface SettingsScreenProps {
   navigation: any;
 }
 
+const LANGUAGE_LIST = Object.entries(LANGUAGES).map(([code, name]) => ({ code: code as Language, name }));
+
 export default function SettingsScreen({ navigation }: SettingsScreenProps) {
   const { toggleTheme, isDark } = useTheme();
+  const { language, setLanguage, systemPrompt, setSystemPrompt } = useSettings();
+  const { t } = useTranslation();
+  const [showLangModal, setShowLangModal] = useState(false);
+  const [showPromptModal, setShowPromptModal] = useState(false);
+  const [promptText, setPromptText] = useState(systemPrompt);
 
   const arrowColor = isDark ? '#FFF' : '#FFF';
   const backBtnBg = isDark ? '#1E1E1E' : '#1E1E1E';
+
+  const handleSavePrompt = () => {
+    setSystemPrompt(promptText);
+    setShowPromptModal(false);
+  };
 
   return (
     <View style={[styles.container, isDark ? styles.darkContainer : styles.lightContainer]}>
@@ -19,16 +32,52 @@ export default function SettingsScreen({ navigation }: SettingsScreenProps) {
         <TouchableOpacity style={[styles.backBtn, { backgroundColor: backBtnBg }]} onPress={() => navigation.goBack()}>
           <ArrowLeft size={24} color={arrowColor} />
         </TouchableOpacity>
-        <Text style={[styles.headerTitle, isDark ? styles.darkText : styles.lightText]}>Configuracoes</Text>
+        <Text style={[styles.headerTitle, isDark ? styles.darkText : styles.lightText]}>{t('settings')}</Text>
         <View style={{ width: 40 }} />
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.content}>
           <View style={[styles.section, isDark ? styles.darkSection : styles.lightSection]}>
-            <Text style={[styles.sectionTitle, isDark ? styles.darkText : styles.lightText]}>Aparencia</Text>
-            
-            <View style={[styles.settingItem, isDark ? styles.darkSettingItem : styles.lightSettingItem]}>
+            <Text style={[styles.sectionTitle, isDark ? styles.darkText : styles.lightText]}>{t('general')}</Text>
+
+            <TouchableOpacity
+              style={[styles.settingItem, isDark ? styles.darkSettingItem : styles.lightSettingItem]}
+              onPress={() => setShowLangModal(true)}
+            >
+              <View style={styles.settingInfo}>
+                <Globe size={22} color={isDark ? '#FFF' : '#000'} style={{ marginRight: 12 }} />
+                <View>
+                  <Text style={[styles.settingLabel, isDark ? styles.darkText : styles.lightText]}>{t('language')}</Text>
+                  <Text style={[styles.settingDescription, isDark ? styles.darkSecondaryText : styles.lightSecondaryText]}>
+                    {LANGUAGES[language]}
+                  </Text>
+                </View>
+              </View>
+              <Text style={{ color: isDark ? '#888' : '#666', fontSize: 18 }}>{'>'}</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.settingItem, isDark ? styles.darkSettingItem : styles.lightSettingItem, { borderBottomWidth: 0 }]}
+              onPress={() => { setPromptText(systemPrompt); setShowPromptModal(true); }}
+            >
+              <View style={styles.settingInfo}>
+                <MessageSquare size={22} color={isDark ? '#FFF' : '#000'} style={{ marginRight: 12 }} />
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.settingLabel, isDark ? styles.darkText : styles.lightText]}>{t('systemPrompt')}</Text>
+                  <Text style={[styles.settingDescription, isDark ? styles.darkSecondaryText : styles.lightSecondaryText]} numberOfLines={2}>
+                    {t('systemPromptDesc')}
+                  </Text>
+                </View>
+              </View>
+              <Text style={{ color: isDark ? '#888' : '#666', fontSize: 18 }}>{'>'}</Text>
+            </TouchableOpacity>
+          </View>
+
+          <View style={[styles.section, isDark ? styles.darkSection : styles.lightSection]}>
+            <Text style={[styles.sectionTitle, isDark ? styles.darkText : styles.lightText]}>{t('appearance')}</Text>
+
+            <View style={[styles.settingItem, isDark ? styles.darkSettingItem : styles.lightSettingItem, { borderBottomWidth: 0 }]}>
               <View style={styles.settingInfo}>
                 {isDark ? (
                   <Moon size={22} color={isDark ? '#FFF' : '#000'} style={{ marginRight: 12 }} />
@@ -36,9 +85,9 @@ export default function SettingsScreen({ navigation }: SettingsScreenProps) {
                   <Sun size={22} color={isDark ? '#FFF' : '#000'} style={{ marginRight: 12 }} />
                 )}
                 <View>
-                  <Text style={[styles.settingLabel, isDark ? styles.darkText : styles.lightText]}>Tema Escuro</Text>
+                  <Text style={[styles.settingLabel, isDark ? styles.darkText : styles.lightText]}>{t('darkTheme')}</Text>
                   <Text style={[styles.settingDescription, isDark ? styles.darkSecondaryText : styles.lightSecondaryText]}>
-                    {isDark ? 'Ativado' : 'Desativado'}
+                    {isDark ? t('enabled') : t('disabled')}
                   </Text>
                 </View>
               </View>
@@ -52,11 +101,11 @@ export default function SettingsScreen({ navigation }: SettingsScreenProps) {
           </View>
 
           <View style={[styles.section, isDark ? styles.darkSection : styles.lightSection]}>
-            <Text style={[styles.sectionTitle, isDark ? styles.darkText : styles.lightText]}>Creditos</Text>
-            
+            <Text style={[styles.sectionTitle, isDark ? styles.darkText : styles.lightText]}>{t('credits')}</Text>
+
             <View style={[styles.creditItem, { borderBottomColor: isDark ? '#2A2A2A' : '#E0E0E0' }]}>
               <View style={styles.creditRow}>
-                <Text style={[styles.creditLabel, isDark ? styles.darkText : styles.lightText]}>Desenvolvido por</Text>
+                <Text style={[styles.creditLabel, isDark ? styles.darkText : styles.lightText]}>{t('developedBy')}</Text>
               </View>
               <View style={styles.creditRow}>
                 <Text style={[styles.creditValue, { color: '#007AFF' }]}>Ghost Systems</Text>
@@ -66,12 +115,70 @@ export default function SettingsScreen({ navigation }: SettingsScreenProps) {
 
             <View style={[styles.creditItem, { borderBottomWidth: 0 }]}>
               <View style={styles.creditRow}>
-                <Text style={[styles.creditLabel, isDark ? styles.darkSecondaryText : styles.lightSecondaryText]}>Versao 1.0.0</Text>
+                <Text style={[styles.creditLabel, isDark ? styles.darkSecondaryText : styles.lightSecondaryText]}>{t('version')} 1.0.0</Text>
               </View>
             </View>
           </View>
         </View>
       </ScrollView>
+
+      <Modal visible={showLangModal} transparent animationType="slide">
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, isDark ? styles.darkSection : styles.lightSection]}>
+            <View style={styles.modalHeader}>
+              <Text style={[styles.modalTitle, isDark ? styles.darkText : styles.lightText]}>{t('selectLanguage')}</Text>
+              <TouchableOpacity onPress={() => setShowLangModal(false)}>
+                <Text style={{ color: '#007AFF', fontSize: 16 }}>{t('close')}</Text>
+              </TouchableOpacity>
+            </View>
+            <FlatList
+              data={LANGUAGE_LIST}
+              keyExtractor={(item) => item.code}
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  style={[
+                    styles.langItem,
+                    language === item.code && { backgroundColor: isDark ? '#2A2A2A' : '#E8F0FE' },
+                    { borderBottomColor: isDark ? '#2A2A2A' : '#E0E0E0' }
+                  ]}
+                  onPress={() => { setLanguage(item.code); setShowLangModal(false); }}
+                >
+                  <Text style={[styles.langText, isDark ? styles.darkText : styles.lightText]}>{item.name}</Text>
+                  {language === item.code && <Text style={{ color: '#007AFF', fontSize: 18 }}>{'✓'}</Text>}
+                </TouchableOpacity>
+              )}
+            />
+          </View>
+        </View>
+      </Modal>
+
+      <Modal visible={showPromptModal} transparent animationType="slide">
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, isDark ? styles.darkSection : styles.lightSection, { maxHeight: '80%' }]}>
+            <View style={styles.modalHeader}>
+              <Text style={[styles.modalTitle, isDark ? styles.darkText : styles.lightText]}>{t('systemPrompt')}</Text>
+              <TouchableOpacity onPress={() => setShowPromptModal(false)}>
+                <Text style={{ color: '#007AFF', fontSize: 16 }}>{t('close')}</Text>
+              </TouchableOpacity>
+            </View>
+            <Text style={[styles.promptHint, isDark ? styles.darkSecondaryText : styles.lightSecondaryText]}>
+              {t('systemPromptDesc')}
+            </Text>
+            <TextInput
+              style={[styles.promptInput, isDark ? styles.darkPromptInput : styles.lightPromptInput, isDark ? styles.darkText : styles.lightText]}
+              value={promptText}
+              onChangeText={setPromptText}
+              multiline
+              textAlignVertical="top"
+              placeholder="Escreve o teu system prompt..."
+              placeholderTextColor={isDark ? '#666' : '#999'}
+            />
+            <TouchableOpacity style={styles.saveBtn} onPress={handleSavePrompt}>
+              <Text style={styles.saveBtnText}>{t('save')}</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -120,6 +227,12 @@ const styles = StyleSheet.create({
   lightText: {
     color: '#000',
   },
+  darkSecondaryText: {
+    color: '#888',
+  },
+  lightSecondaryText: {
+    color: '#666',
+  },
   content: {
     paddingHorizontal: 16,
   },
@@ -141,17 +254,11 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
-  darkSecondaryText: {
-    color: '#888',
-  },
-  lightSecondaryText: {
-    color: '#666',
-  },
   settingItem: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 8,
+    paddingVertical: 12,
   },
   darkSettingItem: {
     borderBottomWidth: 1,
@@ -164,6 +271,7 @@ const styles = StyleSheet.create({
   settingInfo: {
     flexDirection: 'row',
     alignItems: 'center',
+    flex: 1,
   },
   settingLabel: {
     fontSize: 16,
@@ -189,6 +297,72 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   creditValue: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    padding: 20,
+    maxHeight: '70%',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+  },
+  langItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+  },
+  langText: {
+    fontSize: 16,
+  },
+  promptHint: {
+    fontSize: 13,
+    marginBottom: 12,
+  },
+  promptInput: {
+    borderWidth: 1,
+    borderColor: '#333',
+    borderRadius: 10,
+    padding: 12,
+    fontSize: 15,
+    minHeight: 150,
+    maxHeight: 300,
+  },
+  darkPromptInput: {
+    backgroundColor: '#121212',
+    borderColor: '#333',
+    color: '#FFF',
+  },
+  lightPromptInput: {
+    backgroundColor: '#F9F9F9',
+    borderColor: '#DDD',
+    color: '#000',
+  },
+  saveBtn: {
+    backgroundColor: '#007AFF',
+    borderRadius: 10,
+    paddingVertical: 14,
+    alignItems: 'center',
+    marginTop: 16,
+  },
+  saveBtnText: {
+    color: '#FFF',
     fontSize: 16,
     fontWeight: '600',
   },

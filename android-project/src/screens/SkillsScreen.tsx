@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Switch, Alert, Modal } from 'react-native';
 import { Zap, Plus, Trash2, X, Code, Globe, Calculator, FileText, Terminal, Wrench } from 'lucide-react-native';
 import { useTheme } from '../context/ThemeContext';
+import { useTranslation } from '../context/SettingsContext';
 import RNFS from 'react-native-fs';
 
 const SKILLS_FILE = `${RNFS.DocumentDirectoryPath}skills_config.json`;
@@ -101,6 +102,7 @@ const ICON_MAP: Record<string, any> = { Globe, Calculator, FileText, Terminal, W
 
 export default function SkillsScreen() {
   const { isDark } = useTheme();
+  const { t } = useTranslation();
   const [skills, setSkills] = useState<Skill[]>([]);
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [editingSkill, setEditingSkill] = useState<Skill | null>(null);
@@ -150,9 +152,9 @@ export default function SkillsScreen() {
   };
 
   const deleteSkill = async (id: string) => {
-    Alert.alert("Remover", "Tem certeza?", [
-      { text: "Cancelar" },
-      { text: "Remover", style: "destructive", onPress: async () => {
+    Alert.alert(t('remove'), "Are you sure?", [
+      { text: t('cancel') },
+      { text: t('remove'), style: "destructive", onPress: async () => {
         await saveSkills(skills.filter(s => s.id !== id));
       }}
     ]);
@@ -188,8 +190,8 @@ export default function SkillsScreen() {
   };
 
   const saveSkill = async () => {
-    if (!name.trim()) return Alert.alert("Erro", "Nome obrigatório");
-    if (!handlerCode.trim()) return Alert.alert("Erro", "Código obrigatório");
+    if (!name.trim()) return Alert.alert(t('error'), t('nameRequired'));
+    if (!handlerCode.trim()) return Alert.alert(t('error'), t('codeRequired'));
 
     const iconNames = Object.keys(ICON_MAP);
     const randomIcon = iconNames[Math.floor(Math.random() * iconNames.length)];
@@ -246,8 +248,8 @@ export default function SkillsScreen() {
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.header}>
           <View>
-            <Text style={[styles.title, { color: textColor }]}>Skills</Text>
-            <Text style={[styles.subtitle, { color: secondaryText }]}>Tools / Function Calling</Text>
+            <Text style={[styles.title, { color: textColor }]}>{t('skills')}</Text>
+            <Text style={[styles.subtitle, { color: secondaryText }]}>{t('toolsFC')}</Text>
           </View>
           <TouchableOpacity onPress={openNewSkill} style={styles.addButton}>
             <Plus size={20} color="#FFF" />
@@ -255,7 +257,7 @@ export default function SkillsScreen() {
         </View>
 
         <Text style={[styles.sectionLabel, { color: secondaryText }]}>
-          {skills.filter(s => s.enabled).length} de {skills.length} ativos — Disponíveis para o LLM como tools
+          {skills.filter(s => s.enabled).length} {t('activeOf')} {skills.length} — {t('availableFor')}
         </Text>
 
         {skills.map(skill => {
@@ -277,10 +279,10 @@ export default function SkillsScreen() {
               </View>
               <View style={styles.skillActions}>
                 <TouchableOpacity onPress={() => openEditSkill(skill)} style={[styles.actionBtn, { borderColor }]}>
-                  <Text style={[styles.actionText, { color: '#007AFF' }]}>Editar</Text>
+                  <Text style={[styles.actionText, { color: '#007AFF' }]}>{t('edit')}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity onPress={() => deleteSkill(skill.id)} style={[styles.actionBtn, { borderColor }]}>
-                  <Text style={[styles.actionText, { color: '#F44336' }]}>Remover</Text>
+                  <Text style={[styles.actionText, { color: '#F44336' }]}>{t('remove')}</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -294,18 +296,18 @@ export default function SkillsScreen() {
         <View style={styles.modalOverlay}>
           <View style={[styles.modalContent, { backgroundColor: cardBg }]}>
             <View style={styles.modalHeader}>
-              <Text style={[styles.modalTitle, { color: textColor }]}>{editingSkill ? 'Editar Skill' : 'Nova Skill'}</Text>
+              <Text style={[styles.modalTitle, { color: textColor }]}>{editingSkill ? t('editSkill') : t('newSkill')}</Text>
               <TouchableOpacity onPress={() => setIsModalVisible(false)}><X size={24} color={textColor} /></TouchableOpacity>
             </View>
 
             <ScrollView showsVerticalScrollIndicator={false}>
-              <Text style={[styles.label, { color: secondaryText }]}>Nome</Text>
+              <Text style={[styles.label, { color: secondaryText }]}>{t('name')}</Text>
               <TextInput style={[styles.input, { backgroundColor: inputBg, color: textColor, borderColor }]} value={name} onChangeText={setName} placeholder="minha_funcao" placeholderTextColor={isDark ? "#444" : "#999"} autoCapitalize="none" />
 
-              <Text style={[styles.label, { color: secondaryText }]}>Descrição</Text>
+              <Text style={[styles.label, { color: secondaryText }]}>{t('description')}</Text>
               <TextInput style={[styles.input, { backgroundColor: inputBg, color: textColor, borderColor }]} value={description} onChangeText={setDescription} placeholder="O que esta skill faz" placeholderTextColor={isDark ? "#444" : "#999"} multiline />
 
-              <Text style={[styles.label, { color: secondaryText }]}>Parâmetros ({params.length})</Text>
+              <Text style={[styles.label, { color: secondaryText }]}>{t('parameters')} ({params.length})</Text>
               {params.map((p, i) => (
                 <View key={i} style={[styles.paramRow, { backgroundColor: inputBg, borderColor }]}>
                   <Text style={[styles.paramText, { color: textColor }]}>{p.name} ({p.type}){p.required ? ' *' : ''}</Text>
@@ -327,13 +329,13 @@ export default function SkillsScreen() {
                 <Switch value={paramRequired} onValueChange={setParamRequired} style={{ transform: [{ scaleX: 0.6 }, { scaleY: 0.6 }], marginHorizontal: 4 }} />
                 <TouchableOpacity onPress={addParam}><Plus size={20} color="#007AFF" /></TouchableOpacity>
               </View>
-              <Text style={[styles.hint, { color: secondaryText }]}>Obrigatório = toggle azul</Text>
+              <Text style={[styles.hint, { color: secondaryText }]}>{t('required')} = toggle</Text>
 
-              <Text style={[styles.label, { color: secondaryText }]}>Código (JS)</Text>
+              <Text style={[styles.label, { color: secondaryText }]}>{t('code')}</Text>
               <TextInput style={[styles.codeInput, { backgroundColor: inputBg, color: '#00FF00', borderColor }]} value={handlerCode} onChangeText={setHandlerCode} multiline autoCapitalize="none" placeholder="// params.name, params.age, etc." placeholderTextColor="#333" />
 
               <TouchableOpacity style={styles.saveButton} onPress={saveSkill}>
-                <Text style={styles.saveButtonText}>{editingSkill ? 'Salvar' : 'Criar Skill'}</Text>
+                <Text style={styles.saveButtonText}>{editingSkill ? t('save') : t('createSkill')}</Text>
               </TouchableOpacity>
               <View style={{ height: 30 }} />
             </ScrollView>

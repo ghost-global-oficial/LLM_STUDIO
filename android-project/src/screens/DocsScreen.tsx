@@ -2,9 +2,11 @@ import React from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Linking } from 'react-native';
 import { FileText, Cpu, Globe, Rocket, HelpCircle, ChevronRight, Zap } from 'lucide-react-native';
 import { useTheme } from '../context/ThemeContext';
+import { useTranslation } from '../context/SettingsContext';
 
 export default function DocsScreen() {
   const { isDark } = useTheme();
+  const { t } = useTranslation();
 
   const bgColor = isDark ? '#0F0F0F' : '#F5F5F5';
   const textColor = isDark ? '#FFF' : '#000';
@@ -52,7 +54,7 @@ export default function DocsScreen() {
       </View>
       <Text style={[styles.cardContent, { color: secondaryText }]}>{content}</Text>
       <View style={[styles.cardFooter, { borderTopColor: cardBorder }]}>
-        <Text style={styles.learnMore}>Saber mais</Text>
+        <Text style={styles.learnMore}>{t('learnMore')}</Text>
         <ChevronRight size={16} color="#007AFF" />
       </View>
     </TouchableOpacity>
@@ -62,8 +64,8 @@ export default function DocsScreen() {
     <ScrollView style={[styles.container, { backgroundColor: bgColor }]} contentContainerStyle={[styles.content, { backgroundColor: bgColor }]}>
       <View style={styles.header}>
         <FileText size={32} color={textColor} />
-        <Text style={[styles.headerTitle, { color: textColor }]}>Central de Ajuda</Text>
-        <Text style={[styles.headerSubtitle, { color: secondaryText }]}>Tudo o que você precisa para dominar a IA local</Text>
+        <Text style={[styles.headerTitle, { color: textColor }]}>{t('helpCenter')}</Text>
+        <Text style={[styles.headerSubtitle, { color: secondaryText }]}>{t('helpDesc')}</Text>
       </View>
 
       <View style={[styles.quickStart, { backgroundColor: quickBg, borderColor: cardBorder }]}>
@@ -71,8 +73,8 @@ export default function DocsScreen() {
           <HelpCircle size={20} color="#FFF" />
         </View>
         <View style={styles.quickTextContainer}>
-          <Text style={[styles.quickTitle, { color: textColor }]}>Início Rápido</Text>
-          <Text style={[styles.quickDesc, { color: secondaryText }]}>Se é sua primeira vez, comece baixando um modelo pequeno (ex: Qwen-2 1.5B) na aba de Modelos.</Text>
+          <Text style={[styles.quickTitle, { color: textColor }]}>{t('quickStart')}</Text>
+          <Text style={[styles.quickDesc, { color: secondaryText }]}>{t('quickStartDesc')}</Text>
         </View>
       </View>
 

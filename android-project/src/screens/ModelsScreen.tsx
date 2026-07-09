@@ -8,6 +8,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../App';
 import { AVAILABLE_MODELS, AIModel } from '../data/modelsData';
 import { useTheme } from '../context/ThemeContext';
+import { useTranslation } from '../context/SettingsContext';
 
 const MODELS_DIR = `${RNFS.DocumentDirectoryPath}/models/`;
 
@@ -15,6 +16,7 @@ export default function ModelsScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const isFocused = useIsFocused();
   const { isDark } = useTheme();
+  const { t } = useTranslation();
   const [localModels, setLocalModels] = useState<{ name: string, uri: string, size: number }[]>([]);
   const [showSelectionMenu, setShowSelectionMenu] = useState(false);
 
@@ -48,19 +50,19 @@ export default function ModelsScreen() {
 
   const deleteModel = (uri: string, name: string) => {
     Alert.alert(
-      'Eliminar Modelo',
-      `Tem certeza que deseja apagar ${name}? Esta ação não pode ser desfeita.`,
+      t('deleteModel'),
+      `${t('deleteModelConfirm')} ${name}? ${t('deleteModelDesc')}`,
       [
-        { text: 'Cancelar', style: 'cancel' },
+        { text: t('cancel'), style: 'cancel' },
         {
-          text: 'Eliminar',
+          text: t('delete'),
           style: 'destructive',
           onPress: async () => {
             try {
               await RNFS.unlink(uri);
               await loadLocalDirectory();
             } catch (error) {
-              Alert.alert('Erro', 'Não foi possível apagar o modelo.');
+              Alert.alert(t('error'), t('deleteError'));
             }
           }
         }
@@ -124,9 +126,9 @@ export default function ModelsScreen() {
       await RNFS.copyFile(fileUri, newUri);
       await loadLocalDirectory();
 
-      Alert.alert('Sucesso', 'Modelo importado para a pasta interna com sucesso!');
+      Alert.alert(t('success'), t('importSuccess'));
     } catch (error) {
-      alert('Erro ao importar modelo.');
+      alert(t('importError'));
     }
   };
 
@@ -142,7 +144,7 @@ export default function ModelsScreen() {
       <View style={[styles.header, { backgroundColor: bgColor, borderBottomColor: borderColor }]}>
         <View style={styles.headerTitleContainer}>
           <Cpu size={26} color={textColor} style={{ marginRight: 10 }} />
-          <Text style={[styles.headerTitle, { color: textColor }]}>Meus Modelos</Text>
+          <Text style={[styles.headerTitle, { color: textColor }]}>{t('myModels')}</Text>
         </View>
         <TouchableOpacity style={[styles.headerButton, { backgroundColor: cardBg }]} onPress={() => setShowSelectionMenu(true)}>
           <Plus size={24} color={textColor} />
@@ -152,8 +154,8 @@ export default function ModelsScreen() {
       {localModels.length === 0 ? (
         <View style={styles.emptyState}>
           <FolderOpen size={64} color={isDark ? '#333' : '#CCC'} />
-          <Text style={[styles.emptyStateTitle, { color: textColor }]}>Nenhum modelo baixado</Text>
-          <Text style={[styles.emptyStateDesc, { color: secondaryText }]}>Você pode importar do seu celular ou baixar direto do repositório público usando o botão <Text style={{ fontWeight: 'bold' }}>+</Text> acima.</Text>
+          <Text style={[styles.emptyStateTitle, { color: textColor }]}>{t('noModels')}</Text>
+          <Text style={[styles.emptyStateDesc, { color: secondaryText }]}>{t('noModelsDesc')}</Text>
         </View>
       ) : (
         <FlatList
@@ -174,7 +176,7 @@ export default function ModelsScreen() {
 
               <View style={[styles.cardFooter, { borderTopColor: borderColor }]}>
                 <TouchableOpacity style={styles.cardFooterAction} onPress={() => navigateToChat(item.uri, item.name)}>
-                  <Text style={styles.cardLoadText}>Carregar Chat</Text>
+                  <Text style={styles.cardLoadText}>{t('loadChat')}</Text>
                   <ChevronRight size={18} color="#007AFF" />
                 </TouchableOpacity>
 
@@ -191,21 +193,21 @@ export default function ModelsScreen() {
         <TouchableOpacity style={styles.menuOverlay} activeOpacity={1} onPress={() => setShowSelectionMenu(false)}>
           <View style={[styles.menuContent, { backgroundColor: menuBg }]}>
             <View style={[styles.menuHandle, { backgroundColor: isDark ? '#333' : '#CCC' }]} />
-            <Text style={[styles.menuTitle, { color: secondaryText }]}>Selecionar Origem</Text>
+            <Text style={[styles.menuTitle, { color: secondaryText }]}>{t('selectSource')}</Text>
 
             <TouchableOpacity style={styles.menuOption} onPress={importFromDevice}>
               <Folder size={24} color={textColor} style={{ marginRight: 16 }} />
               <View>
-                <Text style={[styles.menuOptionText, { color: textColor }]}>Importar do Dispositivo</Text>
-                <Text style={[styles.menuOptionSubtext, { color: secondaryText }]}>Mover arquivo .gguf para a pasta /models</Text>
+                <Text style={[styles.menuOptionText, { color: textColor }]}>{t('importFromDevice')}</Text>
+                <Text style={[styles.menuOptionSubtext, { color: secondaryText }]}>{t('importFromDeviceDesc')}</Text>
               </View>
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.menuOption} onPress={() => { setShowSelectionMenu(false); navigation.navigate('Download'); }}>
               <CloudDownload size={24} color={textColor} style={{ marginRight: 16 }} />
               <View>
-                <Text style={[styles.menuOptionText, { color: textColor }]}>Baixar da Hugging Face</Text>
-                <Text style={[styles.menuOptionSubtext, { color: secondaryText }]}>Explorar tela de modelos populares</Text>
+                <Text style={[styles.menuOptionText, { color: textColor }]}>{t('downloadFromHF')}</Text>
+                <Text style={[styles.menuOptionSubtext, { color: secondaryText }]}>{t('downloadFromHFDesc')}</Text>
               </View>
             </TouchableOpacity>
           </View>

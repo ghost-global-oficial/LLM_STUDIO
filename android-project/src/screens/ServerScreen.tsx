@@ -6,6 +6,7 @@ import httpbridge from 'react-native-http-bridge-refurbished';
 import { initLlama, LlamaContext } from 'llama.rn';
 import RNFS from 'react-native-fs';
 import { useTheme } from '../context/ThemeContext';
+import { useTranslation } from '../context/SettingsContext';
 
 const MODELS_DIR = `${RNFS.DocumentDirectoryPath}/models/`;
 const CONFIG_FILE = `${RNFS.DocumentDirectoryPath}server_config.json`;
@@ -37,6 +38,7 @@ const DEFAULT_HARDWARE: HardwareConfig = { threads: '4', nCtx: '4096', gpuLayers
 
 export default function ServerScreen() {
   const { isDark } = useTheme();
+  const { t } = useTranslation();
   const [isServerActive, setIsServerActive] = useState(false);
   const [port, setPort] = useState('1234');
   const [apiKey, setApiKey] = useState('lm-studio-v1-key-secret');
@@ -594,23 +596,23 @@ export default function ServerScreen() {
     <View style={{ flex: 1, backgroundColor: bgColor }}>
       <ScrollView style={styles.container} contentContainerStyle={[styles.content, { backgroundColor: bgColor }]}>
         <View style={styles.header}>
-          <Text style={[styles.title, { color: textColor }]}>API Server</Text>
+          <Text style={[styles.title, { color: textColor }]}>{t('apiServer')}</Text>
           <Server size={32} color={isServerActive ? "#4CAF50" : "#666"} />
         </View>
 
         <View style={[styles.statusCard, { backgroundColor: cardBg, borderColor: isServerActive ? '#4CAF5088' : borderColor }]}>
           <View style={styles.statusInfo}>
             <View style={[styles.statusIndicator, { backgroundColor: isServerActive ? '#4CAF50' : '#F44336' }]} />
-            <Text style={[styles.statusText, { color: textColor }]}>{isServerActive ? 'Servidor Ativo' : 'Servidor Desligado'}</Text>
+            <Text style={[styles.statusText, { color: textColor }]}>{isServerActive ? t('serverActive') : t('serverOff')}</Text>
           </View>
           <Switch value={isServerActive} onValueChange={toggleServer} trackColor={{ false: '#333', true: '#4CAF50' }} thumbColor={isServerActive ? '#FFF' : '#888'} />
         </View>
 
         <View style={styles.section}>
           <View style={styles.sectionHeaderRow}>
-            <Text style={[styles.sectionTitle, { color: secondaryText }]}>REDE</Text>
+            <Text style={[styles.sectionTitle, { color: secondaryText }]}>{t('network')}</Text>
             <View style={styles.manualIpRow}>
-              <Text style={[styles.manualIpLabel, { color: secondaryText }]}>IP Manual</Text>
+              <Text style={[styles.manualIpLabel, { color: secondaryText }]}>{t('manualIP')}</Text>
               <Switch value={isManualIpEnabled} onValueChange={setIsManualIpEnabled} trackColor={{ false: '#333', true: '#007AFF' }} style={{ transform: [{ scaleX: 0.7 }, { scaleY: 0.7 }] }} />
             </View>
           </View>
@@ -618,7 +620,7 @@ export default function ServerScreen() {
           <View style={styles.configItem}>
             <View style={styles.configHeader}>
               <Globe size={18} color={secondaryText} style={{ marginRight: 8 }} />
-              <Text style={[styles.configLabel, { color: secondaryText }]}>{isManualIpEnabled ? 'IP Manual' : 'IP Local'}</Text>
+              <Text style={[styles.configLabel, { color: secondaryText }]}>{isManualIpEnabled ? t('manualIP') : t('localIP')}</Text>
             </View>
             {isManualIpEnabled ? (
               <TextInput style={[styles.input, { backgroundColor: inputBg, color: textColor, borderColor }]} value={manualIp} onChangeText={setManualIp} placeholder="192.168.1.100" placeholderTextColor={isDark ? "#444" : "#999"} />
@@ -640,27 +642,27 @@ export default function ServerScreen() {
           <View style={styles.configItem}>
             <View style={styles.configHeader}>
               <Cpu size={18} color={secondaryText} style={{ marginRight: 8 }} />
-              <Text style={[styles.configLabel, { color: secondaryText }]}>Porta</Text>
+              <Text style={[styles.configLabel, { color: secondaryText }]}>{t('port')}</Text>
             </View>
             <TextInput style={[styles.input, { backgroundColor: inputBg, color: textColor, borderColor }]} value={port} onChangeText={setPort} keyboardType="numeric" placeholder="1234" placeholderTextColor={isDark ? "#444" : "#999"} editable={!isServerActive} />
           </View>
         </View>
 
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: secondaryText }]}>SEGURANÇA</Text>
+          <Text style={[styles.sectionTitle, { color: secondaryText }]}>{t('security')}</Text>
           <View style={styles.configItem}>
             <View style={styles.configHeader}>
               <Shield size={18} color={secondaryText} style={{ marginRight: 8 }} />
-              <Text style={[styles.configLabel, { color: secondaryText }]}>API Key (Bearer)</Text>
+              <Text style={[styles.configLabel, { color: secondaryText }]}>{t('apiKey')}</Text>
             </View>
             <View style={styles.inputRow}>
               <TextInput style={[styles.input, { flex: 1, backgroundColor: inputBg, color: textColor, borderColor }]} value={showApiKey ? apiKey : '••••••••••••••••'} onChangeText={setApiKey} autoCapitalize="none" editable={!isServerActive} />
               <TouchableOpacity style={styles.refreshButton} onPress={() => setShowApiKey(!showApiKey)}>
-                <Text style={{ color: textColor, fontSize: 11, fontWeight: '600' }}>{showApiKey ? 'Ocultar' : 'Mostrar'}</Text>
+                <Text style={{ color: textColor, fontSize: 11, fontWeight: '600' }}>{showApiKey ? t('hide') : t('show')}</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.refreshButton} onPress={() => copyToClipboard(apiKey, 'API Key')}>
                 {copiedField === 'API Key' ? (
-                  <Text style={{ color: '#4CAF50', fontSize: 11, fontWeight: '600' }}>Copiado!</Text>
+                    <Text style={{ color: '#4CAF50', fontSize: 11, fontWeight: '600' }}>{t('copied')}</Text>
                 ) : (
                   <Copy size={18} color={textColor} />
                 )}
@@ -674,10 +676,10 @@ export default function ServerScreen() {
 
         <View style={styles.section}>
           <View style={styles.sectionHeaderRow}>
-            <Text style={[styles.sectionTitle, { color: secondaryText }]}>MODELOS ({activeModels.filter(m => m.status === 'active').length} ativos)</Text>
+            <Text style={[styles.sectionTitle, { color: secondaryText }]}>{t('models')} ({activeModels.filter(m => m.status === 'active').length} {t('active')})</Text>
             <TouchableOpacity onPress={() => { scanModels(); setIsFilePickerVisible(true); }} style={styles.addButton}>
               <Plus size={18} color="#FFF" />
-              <Text style={styles.addButtonText}>Adicionar</Text>
+              <Text style={styles.addButtonText}>{t('add')}</Text>
             </TouchableOpacity>
           </View>
 
@@ -716,19 +718,19 @@ export default function ServerScreen() {
 
           {activeModels.length === 0 && (
             <View style={[styles.emptyContainer, { backgroundColor: isDark ? '#111' : '#F5F5F5', borderColor }]}>
-              <Text style={[styles.emptyText, { color: secondaryText }]}>Nenhum modelo. Toque em "Adicionar".</Text>
+              <Text style={[styles.emptyText, { color: secondaryText }]}>{t('noModel')}</Text>
             </View>
           )}
 
-          <Text style={[styles.infoNote, { color: isDark ? '#555' : '#999' }]}>Compatível com OpenAI API. Use: Authorization: Bearer {apiKey.substring(0, 8)}...</Text>
+          <Text style={[styles.infoNote, { color: isDark ? '#555' : '#999' }]}>{t('compatible')}</Text>
         </View>
 
         {logs.length > 0 && (
           <View style={styles.logsSection}>
             <View style={styles.sectionHeaderRow}>
-              <Text style={[styles.sectionTitle, { color: secondaryText }]}>LOGS</Text>
+              <Text style={[styles.sectionTitle, { color: secondaryText }]}>{t('logs')}</Text>
               <TouchableOpacity onPress={() => setLogs([])}>
-                <Text style={{ color: '#007AFF', fontSize: 12 }}>Limpar</Text>
+                <Text style={{ color: '#007AFF', fontSize: 12 }}>{t('clear')}</Text>
               </TouchableOpacity>
             </View>
             <ScrollView ref={logRef} style={[styles.logContainer, { backgroundColor: isDark ? '#000' : '#1A1A1A', borderColor }]} nestedScrollEnabled onContentSizeChange={() => logRef.current?.scrollToEnd({ animated: false })}>

@@ -8,6 +8,7 @@ import { initLlama, LlamaContext } from 'llama.rn';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../App';
 import { useTheme } from '../context/ThemeContext';
+import { useSettings, useTranslation } from '../context/SettingsContext';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Chat'>;
 
@@ -19,11 +20,13 @@ interface Message {
 
 export default function ChatScreen({ route, navigation }: Props) {
   const { isDark } = useTheme();
+  const { systemPrompt } = useSettings();
+  const { t } = useTranslation();
   const { fileUri, fileName } = route.params;
   const [modelReady, setModelReady] = useState(false);
   const [loading, setLoading] = useState(true);
   const [messages, setMessages] = useState<Message[]>([
-    { id: '1', text: `Conectado ao modelo ${fileName}. Teste dizendo um Oi!`, isUser: false }
+    { id: '1', text: `${t('connected')} ${fileName}. ${t('testMessage')}`, isUser: false }
   ]);
   const [inputText, setInputText] = useState('');
   const llamaContext = useRef<LlamaContext | null>(null);
@@ -57,12 +60,12 @@ export default function ChatScreen({ route, navigation }: Props) {
         const errMsg = (error?.message || '').toLowerCase();
         if (errMsg.includes('install') && errMsg.includes('null')) {
           Alert.alert(
-            'Erro do Expo Go',
-            'Sua dependência "llama.rn" não conseguiu achar o código nativo (C++). Isso ocorre porque você está rodando pelo app padrão do Expo Go, que não roda módulos nativos.\n\nPara consertar, feche o Expo e rode no terminal:\nnpx expo prebuild --platform android\nnpx expo run:android',
-            [{ text: 'Entendi', onPress: () => navigation.goBack() }]
+            'Expo Go Error',
+            'llama.rn native code (C++) not found. Run npx expo prebuild --platform android then npx expo run:android',
+            [{ text: 'OK', onPress: () => navigation.goBack() }]
           );
         } else {
-          Alert.alert('Erro fatal no modelo', String(error));
+          Alert.alert(t('modelError'), String(error));
         }
       }
     };
@@ -84,7 +87,7 @@ export default function ChatScreen({ route, navigation }: Props) {
     }
 
     if (!llamaContext.current) {
-       return Alert.alert('Erro', 'O modelo ainda não foi carregado corretamente na memória do celular.');
+       return Alert.alert(t('error'), 'Model not loaded');
     }
 
     const userMsg: Message = { id: Date.now().toString(), text: inputText, isUser: true };
@@ -101,7 +104,7 @@ export default function ChatScreen({ route, navigation }: Props) {
     try {
       // Build conversation context using current messages state
       const currentMessages = messages;
-      let fullContext = "";
+      let fullContext = `<|system|>\n${systemPrompt} <|end|>\n`;
       currentMessages.forEach(msg => {
         if (msg.id !== '1' && msg.text !== '') {
            fullContext += msg.isUser ? `<|user|>\n${msg.text} <|end|>\n` : `<|assistant|>\n${msg.text} <|end|>\n`;
@@ -144,13 +147,13 @@ export default function ChatScreen({ route, navigation }: Props) {
       setMessages(prev => prev.map(m => {
         if (m.id === aiMsgId && m.text === "") {
           const finalResult = response?.text || response?.content || "";
-          return { ...m, text: finalResult || "A IA não retornou resposta." };
+          return { ...m, text: finalResult || t('noResponse') };
         }
         return m;
       }));
     } catch (error: any) {
       console.error('Inference crash:', error);
-      Alert.alert('Erro no Motor', 'A IA parou de responder: ' + (error.message || 'Erro desconhecido'));
+      Alert.alert(t('error'), t('inferenceError') + ': ' + (error.message || 'Unknown'));
       setMessages(prev => prev.filter(m => m.id !== aiMsgId));
     } finally {
       setLoading(false);
@@ -181,7 +184,7 @@ export default function ChatScreen({ route, navigation }: Props) {
           <Text style={[styles.headerTitle, { color: textColor }]} numberOfLines={1}>{fileName}</Text>
           <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 2 }}>
             {!modelReady && <ActivityIndicator size="small" color="#007AFF" style={{ marginRight: 6 }} />}
-            <Text style={[styles.headerSubtitle, { color: secondaryText }]}>{modelReady ? 'Online - Memória Local' : 'Injetando na Memória...'}</Text>
+            <Text style={[styles.headerSubtitle, { color: secondaryText }]}>{modelReady ? t('online') : t('loadModel')}</Text>
           </View>
         </View>
         <View style={{ width: 40 }} />
@@ -215,7 +218,7 @@ export default function ChatScreen({ route, navigation }: Props) {
             <View style={[styles.messageBubble, styles.aiMessage, { backgroundColor: bubbleBg, borderColor: bubbleBorder, flexDirection: 'row', alignItems: 'center' }]}>
                <ActivityIndicator size="small" color={secondaryText} style={{ marginRight: 8 }} />
                <Text style={[styles.messageText, { color: secondaryText, fontStyle: 'italic' }]}>
-                  Processando modelo e gerando texto...
+                  {t('processing')}
                </Text>
             </View>
           </View>
@@ -232,7 +235,7 @@ export default function ChatScreen({ route, navigation }: Props) {
             style={[styles.textInput, { color: textColor }]}
             value={inputText}
             onChangeText={setInputText}
-            placeholder={modelReady ? "Escreva sua mensagem..." : "Aguarde o carregamento..."}
+            placeholder={modelReady ? t('writeMessage') : t('waitLoad')}
             placeholderTextColor={placeholderColor}
             editable={modelReady && !loading}
             multiline
