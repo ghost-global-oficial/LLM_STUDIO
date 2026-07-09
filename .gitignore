@@ -2,6 +2,9 @@ node_modules/
 dist/
 dist-electron/
 release/
+release/**/*
+*.appx
+*.exe
 *.log
 .env
 .env.local
