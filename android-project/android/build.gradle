@@ -1,0 +1,36 @@
+plugins {
+  id 'com.android.application' version '8.7.0' apply false
+  id 'org.jetbrains.kotlin.android' version '2.0.0' apply false
+  id 'com.facebook.react.rootproject'
+}
+
+ext {
+    minSdkVersion = 24
+    compileSdkVersion = 34
+    targetSdkVersion = 34
+    buildToolsVersion = '34.0.0'
+    ndkVersion = '27.1.12297006'
+}
+
+allprojects {
+  repositories {
+    google()
+    mavenCentral()
+    maven { url 'https://www.jitpack.io' }
+  }
+  
+  // Resolve Duplicate Class issues between AndroidX and Legacy Support Library
+  configurations.all {
+    resolutionStrategy {
+      force "androidx.core:core:1.13.1"
+      force "androidx.media:media:1.0.0"
+      force "org.jetbrains.kotlin:kotlin-stdlib:2.0.0"
+      force "org.jetbrains.kotlin:kotlin-stdlib-jdk7:2.0.0"
+      force "org.jetbrains.kotlin:kotlin-stdlib-jdk8:2.0.0"
+    }
+    exclude group: 'com.android.support', module: 'support-v4'
+    exclude group: 'com.android.support', module: 'support-compat'
+    exclude group: 'com.android.support', module: 'support-media-compat'
+    exclude group: 'com.android.support', module: 'support-core-utils'
+  }
+}
