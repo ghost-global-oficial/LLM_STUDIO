@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, Text, View, TouchableOpacity, Switch, ScrollView, TextInput, Modal, FlatList, Platform, NativeModules, Dimensions } from 'react-native';
-import { Moon, Sun, ArrowLeft, ExternalLink, Globe, MessageSquare, Cpu, MemoryStick, Monitor } from 'lucide-react-native';
+import { StyleSheet, Text, View, TouchableOpacity, Switch, ScrollView, TextInput, Modal, FlatList, Platform, NativeModules } from 'react-native';
+import { Moon, Sun, ArrowLeft, ExternalLink, Globe, MessageSquare, Cpu } from 'lucide-react-native';
 import { useTheme } from '../context/ThemeContext';
 import { useSettings, useTranslation, LANGUAGES, Language } from '../context/SettingsContext';
 
@@ -16,6 +16,7 @@ export default function SettingsScreen({ navigation }: SettingsScreenProps) {
   const { t } = useTranslation();
   const [showLangModal, setShowLangModal] = useState(false);
   const [showPromptModal, setShowPromptModal] = useState(false);
+  const [showHwModal, setShowHwModal] = useState(false);
   const [promptText, setPromptText] = useState(systemPrompt);
 
   const [hwInfo, setHwInfo] = useState({
@@ -143,53 +144,21 @@ export default function SettingsScreen({ navigation }: SettingsScreenProps) {
           <View style={[styles.section, isDark ? styles.darkSection : styles.lightSection]}>
             <Text style={[styles.sectionTitle, isDark ? styles.darkText : styles.lightText]}>{t('hardware')}</Text>
 
-            <View style={[styles.settingItem, isDark ? styles.darkSettingItem : styles.lightSettingItem]}>
-              <View style={styles.settingInfo}>
-                <MemoryStick size={22} color={isDark ? '#FFF' : '#000'} style={{ marginRight: 12 }} />
-                <View>
-                  <Text style={[styles.settingLabel, isDark ? styles.darkText : styles.lightText]}>{t('ram')}</Text>
-                  <Text style={[styles.settingDescription, isDark ? styles.darkSecondaryText : styles.lightSecondaryText]}>
-                    {hwInfo.ram}
-                  </Text>
-                </View>
-              </View>
-            </View>
-
-            <View style={[styles.settingItem, isDark ? styles.darkSettingItem : styles.lightSettingItem]}>
-              <View style={styles.settingInfo}>
-                <Monitor size={22} color={isDark ? '#FFF' : '#000'} style={{ marginRight: 12 }} />
-                <View>
-                  <Text style={[styles.settingLabel, isDark ? styles.darkText : styles.lightText]}>{t('vram')}</Text>
-                  <Text style={[styles.settingDescription, isDark ? styles.darkSecondaryText : styles.lightSecondaryText]}>
-                    {hwInfo.vram}
-                  </Text>
-                </View>
-              </View>
-            </View>
-
-            <View style={[styles.settingItem, isDark ? styles.darkSettingItem : styles.lightSettingItem]}>
+            <TouchableOpacity
+              style={[styles.settingItem, isDark ? styles.darkSettingItem : styles.lightSettingItem, { borderBottomWidth: 0 }]}
+              onPress={() => setShowHwModal(true)}
+            >
               <View style={styles.settingInfo}>
                 <Cpu size={22} color={isDark ? '#FFF' : '#000'} style={{ marginRight: 12 }} />
                 <View>
-                  <Text style={[styles.settingLabel, isDark ? styles.darkText : styles.lightText]}>{t('processor')}</Text>
+                  <Text style={[styles.settingLabel, isDark ? styles.darkText : styles.lightText]}>{t('hardware')}</Text>
                   <Text style={[styles.settingDescription, isDark ? styles.darkSecondaryText : styles.lightSecondaryText]}>
-                    {hwInfo.cpu}
+                    {hwInfo.cpu !== '...' ? `${hwInfo.ram} RAM | ${hwInfo.cpu}` : t('loading')}
                   </Text>
                 </View>
               </View>
-            </View>
-
-            <View style={[styles.settingItem, isDark ? styles.darkSettingItem : styles.lightSettingItem, { borderBottomWidth: 0 }]}>
-              <View style={styles.settingInfo}>
-                <Monitor size={22} color={isDark ? '#FFF' : '#000'} style={{ marginRight: 12 }} />
-                <View>
-                  <Text style={[styles.settingLabel, isDark ? styles.darkText : styles.lightText]}>{t('gpu')}</Text>
-                  <Text style={[styles.settingDescription, isDark ? styles.darkSecondaryText : styles.lightSecondaryText]}>
-                    {hwInfo.gpu}
-                  </Text>
-                </View>
-              </View>
-            </View>
+              <Text style={{ color: isDark ? '#888' : '#666', fontSize: 18 }}>{'>'}</Text>
+            </TouchableOpacity>
           </View>
 
           <View style={[styles.section, isDark ? styles.darkSection : styles.lightSection]}>
@@ -268,6 +237,39 @@ export default function SettingsScreen({ navigation }: SettingsScreenProps) {
             <TouchableOpacity style={styles.saveBtn} onPress={handleSavePrompt}>
               <Text style={styles.saveBtnText}>{t('save')}</Text>
             </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal visible={showHwModal} transparent animationType="slide">
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, isDark ? styles.darkSection : styles.lightSection]}>
+            <View style={styles.modalHeader}>
+              <Text style={[styles.modalTitle, isDark ? styles.darkText : styles.lightText]}>{t('hardware')}</Text>
+              <TouchableOpacity onPress={() => setShowHwModal(false)}>
+                <Text style={{ color: '#007AFF', fontSize: 16 }}>{t('close')}</Text>
+              </TouchableOpacity>
+            </View>
+
+            <View style={[styles.hwItem, { borderBottomColor: isDark ? '#2A2A2A' : '#E0E0E0' }]}>
+              <Text style={[styles.hwLabel, isDark ? styles.darkSecondaryText : styles.lightSecondaryText]}>{t('ram')}</Text>
+              <Text style={[styles.hwValue, isDark ? styles.darkText : styles.lightText]}>{hwInfo.ram}</Text>
+            </View>
+
+            <View style={[styles.hwItem, { borderBottomColor: isDark ? '#2A2A2A' : '#E0E0E0' }]}>
+              <Text style={[styles.hwLabel, isDark ? styles.darkSecondaryText : styles.lightSecondaryText]}>{t('vram')}</Text>
+              <Text style={[styles.hwValue, isDark ? styles.darkText : styles.lightText]}>{hwInfo.vram}</Text>
+            </View>
+
+            <View style={[styles.hwItem, { borderBottomColor: isDark ? '#2A2A2A' : '#E0E0E0' }]}>
+              <Text style={[styles.hwLabel, isDark ? styles.darkSecondaryText : styles.lightSecondaryText]}>{t('processor')}</Text>
+              <Text style={[styles.hwValue, isDark ? styles.darkText : styles.lightText]}>{hwInfo.cpu}</Text>
+            </View>
+
+            <View style={[styles.hwItem, { borderBottomWidth: 0 }]}>
+              <Text style={[styles.hwLabel, isDark ? styles.darkSecondaryText : styles.lightSecondaryText]}>{t('gpu')}</Text>
+              <Text style={[styles.hwValue, isDark ? styles.darkText : styles.lightText]}>{hwInfo.gpu}</Text>
+            </View>
           </View>
         </View>
       </Modal>
@@ -457,5 +459,17 @@ const styles = StyleSheet.create({
     color: '#FFF',
     fontSize: 16,
     fontWeight: '600',
+  },
+  hwItem: {
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+  },
+  hwLabel: {
+    fontSize: 13,
+    marginBottom: 4,
+  },
+  hwValue: {
+    fontSize: 16,
+    fontWeight: '500',
   },
 });
