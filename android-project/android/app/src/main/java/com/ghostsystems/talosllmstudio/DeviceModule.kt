@@ -146,25 +146,25 @@ class DeviceModule(reactContext: ReactApplicationContext) : ReactContextBaseJava
             when (mode) {
                 "performance" -> {
                     map.putInt("n_threads", cpuCores)
-                    map.putInt("n_ctx", if (totalRamMB >= 6144) 4096 else 2048)
+                    map.putInt("n_ctx", 4096)
                     map.putInt("n_gpu_layers", if (totalRamMB >= 6144) 99 else 33)
                     map.putBoolean("use_mlock", true)
                 }
                 "balanced" -> {
                     map.putInt("n_threads", (cpuCores * 0.75).toInt().coerceAtLeast(2))
-                    map.putInt("n_ctx", if (totalRamMB >= 6144) 2048 else 1024)
+                    map.putInt("n_ctx", 2048)
                     map.putInt("n_gpu_layers", if (totalRamMB >= 6144) 33 else 0)
                     map.putBoolean("use_mlock", false)
                 }
                 "efficiency" -> {
                     map.putInt("n_threads", (cpuCores * 0.5).toInt().coerceAtLeast(2))
-                    map.putInt("n_ctx", 512)
+                    map.putInt("n_ctx", 1024)
                     map.putInt("n_gpu_layers", 0)
                     map.putBoolean("use_mlock", false)
                 }
                 else -> {
                     map.putInt("n_threads", (cpuCores * 0.75).toInt().coerceAtLeast(2))
-                    map.putInt("n_ctx", 1024)
+                    map.putInt("n_ctx", 2048)
                     map.putInt("n_gpu_layers", 0)
                     map.putBoolean("use_mlock", false)
                 }
