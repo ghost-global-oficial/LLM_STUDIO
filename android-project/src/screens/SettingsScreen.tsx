@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { StyleSheet, Text, View, TouchableOpacity, Switch, ScrollView, TextInput, Modal, FlatList, Platform, NativeModules, Dimensions } from 'react-native';
-import { Moon, Sun, ArrowLeft, ExternalLink, Globe, MessageSquare, Cpu } from 'lucide-react-native';
+import { Moon, Sun, ArrowLeft, ExternalLink, Globe, MessageSquare, Cpu, MemoryStick, Monitor } from 'lucide-react-native';
 import { useTheme } from '../context/ThemeContext';
 import { useSettings, useTranslation, LANGUAGES, Language } from '../context/SettingsContext';
 
@@ -19,21 +19,43 @@ export default function SettingsScreen({ navigation }: SettingsScreenProps) {
   const [promptText, setPromptText] = useState(systemPrompt);
 
   const [hwInfo, setHwInfo] = useState({
-    model: '',
-    os: '',
-    screen: '',
-    architecture: '',
+    ram: '...',
+    vram: '...',
+    cpu: '...',
+    gpu: '...',
   });
 
   useEffect(() => {
-    const constants = NativeModules.PlatformConstants || {};
-    const screen = Dimensions.get('window');
-    setHwInfo({
-      model: constants.Model || constants.model || Platform.OS,
-      os: `${Platform.OS} ${Platform.Version}`,
-      screen: `${Math.round(screen.width)} x ${Math.round(screen.height)}`,
-      architecture: constants.arch || 'N/A',
-    });
+    const getHardwareInfo = async () => {
+      const constants = NativeModules.PlatformConstants || {};
+      const mem = NativeModules.MemoryInfo;
+      const deviceInfo = NativeModules.DeviceInfo;
+
+      let ram = 'N/A';
+      let vram = 'N/A';
+      let cpu = 'N/A';
+      let gpu = 'N/A';
+
+      // RAM
+      try {
+        if (mem && mem.getMemoryInfo) {
+          const info = await mem.getMemoryInfo();
+          if (info && info.totalMemory) {
+            ram = `${(info.totalMemory / (1024 * 1024 * 1024)).toFixed(1)} GB`;
+          }
+        }
+      } catch (e) {}
+
+      // CPU
+      const arch = constants.arch || '';
+      const model = constants.model || '';
+      if (model || arch) {
+        cpu = `${model}${arch ? ' (' + arch + ')' : ''}`;
+      }
+
+      setHwInfo({ ram, vram, cpu, gpu });
+    };
+    getHardwareInfo();
   }, []);
 
   const arrowColor = isDark ? '#FFF' : '#FFF';
@@ -123,35 +145,35 @@ export default function SettingsScreen({ navigation }: SettingsScreenProps) {
 
             <View style={[styles.settingItem, isDark ? styles.darkSettingItem : styles.lightSettingItem]}>
               <View style={styles.settingInfo}>
+                <MemoryStick size={22} color={isDark ? '#FFF' : '#000'} style={{ marginRight: 12 }} />
+                <View>
+                  <Text style={[styles.settingLabel, isDark ? styles.darkText : styles.lightText]}>{t('ram')}</Text>
+                  <Text style={[styles.settingDescription, isDark ? styles.darkSecondaryText : styles.lightSecondaryText]}>
+                    {hwInfo.ram}
+                  </Text>
+                </View>
+              </View>
+            </View>
+
+            <View style={[styles.settingItem, isDark ? styles.darkSettingItem : styles.lightSettingItem]}>
+              <View style={styles.settingInfo}>
+                <Monitor size={22} color={isDark ? '#FFF' : '#000'} style={{ marginRight: 12 }} />
+                <View>
+                  <Text style={[styles.settingLabel, isDark ? styles.darkText : styles.lightText]}>{t('vram')}</Text>
+                  <Text style={[styles.settingDescription, isDark ? styles.darkSecondaryText : styles.lightSecondaryText]}>
+                    {hwInfo.vram}
+                  </Text>
+                </View>
+              </View>
+            </View>
+
+            <View style={[styles.settingItem, isDark ? styles.darkSettingItem : styles.lightSettingItem]}>
+              <View style={styles.settingInfo}>
                 <Cpu size={22} color={isDark ? '#FFF' : '#000'} style={{ marginRight: 12 }} />
                 <View>
-                  <Text style={[styles.settingLabel, isDark ? styles.darkText : styles.lightText]}>{t('device')}</Text>
+                  <Text style={[styles.settingLabel, isDark ? styles.darkText : styles.lightText]}>{t('processor')}</Text>
                   <Text style={[styles.settingDescription, isDark ? styles.darkSecondaryText : styles.lightSecondaryText]}>
-                    {hwInfo.model}
-                  </Text>
-                </View>
-              </View>
-            </View>
-
-            <View style={[styles.settingItem, isDark ? styles.darkSettingItem : styles.lightSettingItem]}>
-              <View style={styles.settingInfo}>
-                <View style={{ width: 22, marginRight: 12 }} />
-                <View>
-                  <Text style={[styles.settingLabel, isDark ? styles.darkText : styles.lightText]}>{t('operatingSystem')}</Text>
-                  <Text style={[styles.settingDescription, isDark ? styles.darkSecondaryText : styles.lightSecondaryText]}>
-                    {hwInfo.os}
-                  </Text>
-                </View>
-              </View>
-            </View>
-
-            <View style={[styles.settingItem, isDark ? styles.darkSettingItem : styles.lightSettingItem]}>
-              <View style={styles.settingInfo}>
-                <View style={{ width: 22, marginRight: 12 }} />
-                <View>
-                  <Text style={[styles.settingLabel, isDark ? styles.darkText : styles.lightText]}>{t('screenResolution')}</Text>
-                  <Text style={[styles.settingDescription, isDark ? styles.darkSecondaryText : styles.lightSecondaryText]}>
-                    {hwInfo.screen}
+                    {hwInfo.cpu}
                   </Text>
                 </View>
               </View>
@@ -159,11 +181,11 @@ export default function SettingsScreen({ navigation }: SettingsScreenProps) {
 
             <View style={[styles.settingItem, isDark ? styles.darkSettingItem : styles.lightSettingItem, { borderBottomWidth: 0 }]}>
               <View style={styles.settingInfo}>
-                <View style={{ width: 22, marginRight: 12 }} />
+                <Monitor size={22} color={isDark ? '#FFF' : '#000'} style={{ marginRight: 12 }} />
                 <View>
-                  <Text style={[styles.settingLabel, isDark ? styles.darkText : styles.lightText]}>{t('architecture')}</Text>
+                  <Text style={[styles.settingLabel, isDark ? styles.darkText : styles.lightText]}>{t('gpu')}</Text>
                   <Text style={[styles.settingDescription, isDark ? styles.darkSecondaryText : styles.lightSecondaryText]}>
-                    {hwInfo.architecture}
+                    {hwInfo.gpu}
                   </Text>
                 </View>
               </View>
