@@ -12,6 +12,8 @@ interface SettingsContextType {
   setSystemPrompt: (prompt: string) => void;
   welcomeSeen: boolean;
   setWelcomeSeen: (seen: boolean) => void;
+  performanceMode: string;
+  setPerformanceMode: (mode: string) => void;
 }
 
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
@@ -55,6 +57,7 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
   const [language, setLanguageState] = useState<Language>(getDeviceLanguage());
   const [systemPrompt, setSystemPromptState] = useState(DEFAULT_SYSTEM_PROMPT);
   const [welcomeSeen, setWelcomeSeenState] = useState(false);
+  const [performanceMode, setPerformanceModeState] = useState('balanced');
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
@@ -73,6 +76,9 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
           if (settings.welcomeSeen) {
             setWelcomeSeenState(true);
           }
+          if (settings.performanceMode) {
+            setPerformanceModeState(settings.performanceMode);
+          }
         }
       } catch (e) {
         console.log('Error loading settings', e);
@@ -84,11 +90,11 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (loaded) {
-      RNFS.writeFile(SETTINGS_FILE, JSON.stringify({ language, systemPrompt, welcomeSeen }), 'utf8').catch(e =>
+      RNFS.writeFile(SETTINGS_FILE, JSON.stringify({ language, systemPrompt, welcomeSeen, performanceMode }), 'utf8').catch(e =>
         console.log('Error saving settings', e)
       );
     }
-  }, [language, systemPrompt, welcomeSeen, loaded]);
+  }, [language, systemPrompt, welcomeSeen, performanceMode, loaded]);
 
   const setLanguage = (lang: Language) => {
     setLanguageState(lang);
@@ -102,8 +108,12 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
     setWelcomeSeenState(seen);
   };
 
+  const setPerformanceMode = (mode: string) => {
+    setPerformanceModeState(mode);
+  };
+
   return (
-    <SettingsContext.Provider value={{ language, setLanguage, systemPrompt, setSystemPrompt, welcomeSeen, setWelcomeSeen }}>
+    <SettingsContext.Provider value={{ language, setLanguage, systemPrompt, setSystemPrompt, welcomeSeen, setWelcomeSeen, performanceMode, setPerformanceMode }}>
       {children}
     </SettingsContext.Provider>
   );

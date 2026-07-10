@@ -12,11 +12,12 @@ const LANGUAGE_LIST = Object.entries(LANGUAGES).map(([code, name]) => ({ code: c
 
 export default function SettingsScreen({ navigation }: SettingsScreenProps) {
   const { toggleTheme, isDark } = useTheme();
-  const { language, setLanguage, systemPrompt, setSystemPrompt } = useSettings();
+  const { language, setLanguage, systemPrompt, setSystemPrompt, performanceMode, setPerformanceMode } = useSettings();
   const { t } = useTranslation();
   const [showLangModal, setShowLangModal] = useState(false);
   const [showPromptModal, setShowPromptModal] = useState(false);
   const [showHwModal, setShowHwModal] = useState(false);
+  const [showModeModal, setShowModeModal] = useState(false);
   const [promptText, setPromptText] = useState(systemPrompt);
 
   const [hwInfo, setHwInfo] = useState({
@@ -130,7 +131,7 @@ export default function SettingsScreen({ navigation }: SettingsScreenProps) {
             <Text style={[styles.sectionTitle, isDark ? styles.darkText : styles.lightText]}>{t('hardware')}</Text>
 
             <TouchableOpacity
-              style={[styles.settingItem, isDark ? styles.darkSettingItem : styles.lightSettingItem, { borderBottomWidth: 0 }]}
+              style={[styles.settingItem, isDark ? styles.darkSettingItem : styles.lightSettingItem]}
               onPress={() => setShowHwModal(true)}
             >
               <View style={styles.settingInfo}>
@@ -139,6 +140,22 @@ export default function SettingsScreen({ navigation }: SettingsScreenProps) {
                   <Text style={[styles.settingLabel, isDark ? styles.darkText : styles.lightText]}>{t('hardware')}</Text>
                   <Text style={[styles.settingDescription, isDark ? styles.darkSecondaryText : styles.lightSecondaryText]}>
                     {hwInfo.cpu !== '...' ? `${hwInfo.ram} RAM | ${hwInfo.cpu}` : t('loading')}
+                  </Text>
+                </View>
+              </View>
+              <Text style={{ color: isDark ? '#888' : '#666', fontSize: 18 }}>{'>'}</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.settingItem, isDark ? styles.darkSettingItem : styles.lightSettingItem, { borderBottomWidth: 0 }]}
+              onPress={() => setShowModeModal(true)}
+            >
+              <View style={styles.settingInfo}>
+                <Cpu size={22} color={isDark ? '#FFF' : '#000'} style={{ marginRight: 12 }} />
+                <View>
+                  <Text style={[styles.settingLabel, isDark ? styles.darkText : styles.lightText]}>{t('performanceMode')}</Text>
+                  <Text style={[styles.settingDescription, isDark ? styles.darkSecondaryText : styles.lightSecondaryText]}>
+                    {t(performanceMode)}
                   </Text>
                 </View>
               </View>
@@ -255,6 +272,43 @@ export default function SettingsScreen({ navigation }: SettingsScreenProps) {
               <Text style={[styles.hwLabel, isDark ? styles.darkSecondaryText : styles.lightSecondaryText]}>{t('gpu')}</Text>
               <Text style={[styles.hwValue, isDark ? styles.darkText : styles.lightText]}>{hwInfo.gpu}</Text>
             </View>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal visible={showModeModal} transparent animationType="slide">
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, isDark ? styles.darkSection : styles.lightSection]}>
+            <View style={styles.modalHeader}>
+              <Text style={[styles.modalTitle, isDark ? styles.darkText : styles.lightText]}>{t('performanceMode')}</Text>
+              <TouchableOpacity onPress={() => setShowModeModal(false)}>
+                <Text style={{ color: '#007AFF', fontSize: 16 }}>{t('close')}</Text>
+              </TouchableOpacity>
+            </View>
+
+            {[
+              { key: 'performance', label: t('performance'), desc: t('performanceDesc') },
+              { key: 'balanced', label: t('balanced'), desc: t('balancedDesc') },
+              { key: 'efficiency', label: t('efficiency'), desc: t('efficiencyDesc') },
+            ].map((mode) => (
+              <TouchableOpacity
+                key={mode.key}
+                style={[
+                  styles.langItem,
+                  performanceMode === mode.key && { backgroundColor: isDark ? '#2A2A2A' : '#E8F0FE' },
+                  { borderBottomColor: isDark ? '#2A2A2A' : '#E0E0E0' }
+                ]}
+                onPress={() => { setPerformanceMode(mode.key); setShowModeModal(false); }}
+              >
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.langText, isDark ? styles.darkText : styles.lightText]}>{mode.label}</Text>
+                  <Text style={[styles.settingDescription, isDark ? styles.darkSecondaryText : styles.lightSecondaryText]}>
+                    {mode.desc}
+                  </Text>
+                </View>
+                {performanceMode === mode.key && <Text style={{ color: '#007AFF', fontSize: 18 }}>{'✓'}</Text>}
+              </TouchableOpacity>
+            ))}
           </View>
         </View>
       </Modal>
