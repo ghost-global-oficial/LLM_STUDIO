@@ -31,9 +31,33 @@ class DeviceModule(reactContext: ReactApplicationContext) : ReactContextBaseJava
 
             // CPU
             try {
-                val cpuArch = Build.SUPPORTED_ABIS.firstOrNull() ?: "unknown"
                 val cpuCores = Runtime.getRuntime().availableProcessors()
-                map.putString("cpu", "$cpuArch ($cpuCores cores)")
+                val processorModel = try {
+                    val cl = Class.forName("android.os.SystemProperties")
+                    val get = cl.getMethod("get", String::class.java, String::class.java)
+
+                    // Try multiple properties for CPU model
+                    val chipname = get.invoke(null, "ro.hardware.chipname", "") as String
+                    val platform = get.invoke(null, "ro.board.platform", "") as String
+                    val hardware = Build.HARDWARE ?: ""
+
+                    when {
+                        chipname.isNotEmpty() -> chipname
+                        platform.contains("sm8", true) -> "Qualcomm Snapdragon ${platform.uppercase()}"
+                        platform.contains("sdm", true) -> "Qualcomm Snapdragon ${platform.uppercase()}"
+                        platform.contains("exynos", true) -> "Samsung Exynos $platform"
+                        platform.contains("mt", true) || platform.contains("dimensity", true) -> "MediaTek $platform"
+                        platform.contains("kirin", true) -> "HiSilicon Kirin $platform"
+                        hardware.contains("qualcomm", true) -> "Qualcomm Snapdragon"
+                        hardware.contains("samsung", true) -> "Samsung Exynos"
+                        hardware.contains("mediatek", true) || hardware.contains("mtk", true) -> "MediaTek"
+                        hardware.contains("hisilicon", true) -> "HiSilicon Kirin"
+                        else -> "Unknown"
+                    }
+                } catch (e: Exception) {
+                    "Unknown"
+                }
+                map.putString("cpu", "$processorModel ($cpuCores cores)")
             } catch (e: Exception) {
                 map.putString("cpu", "N/A")
             }
