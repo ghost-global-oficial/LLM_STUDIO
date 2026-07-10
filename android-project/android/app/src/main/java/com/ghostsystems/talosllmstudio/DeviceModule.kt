@@ -40,65 +40,26 @@ class DeviceModule(reactContext: ReactApplicationContext) : ReactContextBaseJava
                 map.putString("ram", "N/A")
             }
 
-            // CPU - real processor model from /proc/cpuinfo
+            // CPU - real processor model
             try {
                 val cpuCores = Runtime.getRuntime().availableProcessors()
-                var processorModel = ""
+                val chipname = getSystemProperty("ro.hardware.chipname")
+                val platform = getSystemProperty("ro.board.platform")
+                val hardware = Build.HARDWARE ?: ""
 
-                // Try /proc/cpuinfo
-                try {
-                    val file = File("/proc/cpuinfo")
-                    if (file.exists()) {
-                        val lines = file.readLines()
-                        for (line in lines) {
-                            if (line.startsWith("Hardware", true) || line.startsWith("model name", true) || line.startsWith("CPU implementer", true)) {
-                                val value = line.split(":").getOrNull(1)?.trim() ?: ""
-                                if (value.isNotEmpty() && value != "0x00" && value != "0x41" && value != "0x51") {
-                                    processorModel = value
-                                    break
-                                }
-                            }
-                        }
-                    }
-                } catch (e: Exception) {}
-
-                // Try /sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_max_freq for frequency
-                var cpuFreq = ""
-                try {
-                    val file = File("/sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_max_freq")
-                    if (file.exists()) {
-                        val freqKhz = file.readText().trim().toLongOrNull() ?: 0
-                        if (freqKhz > 0) {
-                            cpuFreq = if (freqKhz >= 1000000) {
-                                String.format("%.1f GHz", freqKhz.toDouble() / 1000000)
-                            } else {
-                                "${freqKhz / 1000} MHz"
-                            }
-                        }
-                    }
-                } catch (e: Exception) {}
-
-                // Fallback to system properties
-                if (processorModel.isEmpty()) {
-                    val chipname = getSystemProperty("ro.hardware.chipname")
-                    val platform = getSystemProperty("ro.board.platform")
-                    val hardware = Build.HARDWARE ?: ""
-                    processorModel = when {
-                        chipname.isNotEmpty() -> chipname
-                        platform.contains("sm8", true) -> "Qualcomm Snapdragon ${platform.uppercase()}"
-                        platform.contains("sdm", true) -> "Qualcomm Snapdragon ${platform.uppercase()}"
-                        platform.contains("exynos", true) -> "Samsung Exynos"
-                        platform.contains("mt", true) -> "MediaTek Dimensity"
-                        hardware.contains("qualcomm", true) -> "Qualcomm Snapdragon"
-                        hardware.contains("samsung", true) -> "Samsung Exynos"
-                        hardware.contains("mediatek", true) || hardware.contains("mtk", true) -> "MediaTek"
-                        hardware.contains("hisilicon", true) -> "HiSilicon Kirin"
-                        else -> hardware.ifEmpty { "Unknown" }
-                    }
+                val processorModel = when {
+                    chipname.isNotEmpty() -> chipname
+                    platform.contains("sm8", true) -> "Qualcomm Snapdragon ${platform.uppercase()}"
+                    platform.contains("sdm", true) -> "Qualcomm Snapdragon ${platform.uppercase()}"
+                    platform.contains("exynos", true) -> "Samsung Exynos"
+                    platform.contains("mt", true) -> "MediaTek Dimensity"
+                    hardware.contains("qualcomm", true) -> "Qualcomm Snapdragon"
+                    hardware.contains("samsung", true) -> "Samsung Exynos"
+                    hardware.contains("mediatek", true) || hardware.contains("mtk", true) -> "MediaTek"
+                    hardware.contains("hisilicon", true) -> "HiSilicon Kirin"
+                    else -> hardware.ifEmpty { "Unknown" }
                 }
-
-                val freqInfo = if (cpuFreq.isNotEmpty()) " @ $cpuFreq" else ""
-                map.putString("cpu", "$processorModel ($cpuCores cores)$freqInfo")
+                map.putString("cpu", "$processorModel ($cpuCores cores)")
             } catch (e: Exception) {
                 map.putString("cpu", "N/A")
             }
