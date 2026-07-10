@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, Text, View, TouchableOpacity, Switch, ScrollView, TextInput, Modal, FlatList, Platform, NativeModules } from 'react-native';
-import { Moon, Sun, ArrowLeft, ExternalLink, Globe, MessageSquare, Cpu } from 'lucide-react-native';
+import { StyleSheet, Text, View, TouchableOpacity, Switch, ScrollView, TextInput, Modal, FlatList, Platform, NativeModules, Linking } from 'react-native';
+import { Moon, Sun, ArrowLeft, ExternalLink, Globe, MessageSquare, Cpu, RefreshCw } from 'lucide-react-native';
 import { useTheme } from '../context/ThemeContext';
 import { useSettings, useTranslation, LANGUAGES, Language } from '../context/SettingsContext';
 
@@ -18,6 +18,7 @@ export default function SettingsScreen({ navigation }: SettingsScreenProps) {
   const [showPromptModal, setShowPromptModal] = useState(false);
   const [showHwModal, setShowHwModal] = useState(false);
   const [showModeModal, setShowModeModal] = useState(false);
+  const [showRuntimeModal, setShowRuntimeModal] = useState(false);
   const [promptText, setPromptText] = useState(systemPrompt);
 
   const [hwInfo, setHwInfo] = useState({
@@ -156,6 +157,26 @@ export default function SettingsScreen({ navigation }: SettingsScreenProps) {
                   <Text style={[styles.settingLabel, isDark ? styles.darkText : styles.lightText]}>{t('performanceMode')}</Text>
                   <Text style={[styles.settingDescription, isDark ? styles.darkSecondaryText : styles.lightSecondaryText]}>
                     {t(performanceMode)}
+                  </Text>
+                </View>
+              </View>
+              <Text style={{ color: isDark ? '#888' : '#666', fontSize: 18 }}>{'>'}</Text>
+            </TouchableOpacity>
+          </View>
+
+          <View style={[styles.section, isDark ? styles.darkSection : styles.lightSection]}>
+            <Text style={[styles.sectionTitle, isDark ? styles.darkText : styles.lightText]}>{t('runtime')}</Text>
+
+            <TouchableOpacity
+              style={[styles.settingItem, isDark ? styles.darkSettingItem : styles.lightSettingItem, { borderBottomWidth: 0 }]}
+              onPress={() => setShowRuntimeModal(true)}
+            >
+              <View style={styles.settingInfo}>
+                <RefreshCw size={22} color={isDark ? '#FFF' : '#000'} style={{ marginRight: 12 }} />
+                <View>
+                  <Text style={[styles.settingLabel, isDark ? styles.darkText : styles.lightText]}>{t('runtime')}</Text>
+                  <Text style={[styles.settingDescription, isDark ? styles.darkSecondaryText : styles.lightSecondaryText]}>
+                    {t('runtimeDesc')}
                   </Text>
                 </View>
               </View>
@@ -309,6 +330,47 @@ export default function SettingsScreen({ navigation }: SettingsScreenProps) {
                 {performanceMode === mode.key && <Text style={{ color: '#007AFF', fontSize: 18 }}>{'✓'}</Text>}
               </TouchableOpacity>
             ))}
+          </View>
+        </View>
+      </Modal>
+
+      <Modal visible={showRuntimeModal} transparent animationType="slide">
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, isDark ? styles.darkSection : styles.lightSection]}>
+            <View style={styles.modalHeader}>
+              <Text style={[styles.modalTitle, isDark ? styles.darkText : styles.lightText]}>{t('runtime')}</Text>
+              <TouchableOpacity onPress={() => setShowRuntimeModal(false)}>
+                <Text style={{ color: '#007AFF', fontSize: 16 }}>{t('close')}</Text>
+              </TouchableOpacity>
+            </View>
+
+            <View style={[styles.hwItem, { borderBottomColor: isDark ? '#2A2A2A' : '#E0E0E0' }]}>
+              <Text style={[styles.hwLabel, isDark ? styles.darkSecondaryText : styles.lightSecondaryText]}>App Version</Text>
+              <Text style={[styles.hwValue, isDark ? styles.darkText : styles.lightText]}>1.0.0</Text>
+            </View>
+
+            <View style={[styles.hwItem, { borderBottomColor: isDark ? '#2A2A2A' : '#E0E0E0' }]}>
+              <Text style={[styles.hwLabel, isDark ? styles.darkSecondaryText : styles.lightSecondaryText]}>llama.rn</Text>
+              <Text style={[styles.hwValue, isDark ? styles.darkText : styles.lightText]}>0.4.0</Text>
+            </View>
+
+            <View style={[styles.hwItem, { borderBottomColor: isDark ? '#2A2A2A' : '#E0E0E0' }]}>
+              <Text style={[styles.hwLabel, isDark ? styles.darkSecondaryText : styles.lightSecondaryText]}>Talos Engine</Text>
+              <Text style={[styles.hwValue, isDark ? styles.darkText : styles.lightText]}>1.0.0</Text>
+            </View>
+
+            <View style={[styles.hwItem, { borderBottomWidth: 0 }]}>
+              <Text style={[styles.hwLabel, isDark ? styles.darkSecondaryText : styles.lightSecondaryText]}>React Native</Text>
+              <Text style={[styles.hwValue, isDark ? styles.darkText : styles.lightText]}>{Platform.Version}</Text>
+            </View>
+
+            <TouchableOpacity
+              style={[styles.saveBtn, { marginTop: 16, backgroundColor: isDark ? '#2A2A2A' : '#E8E8E8' }]}
+              onPress={() => Linking.openURL('https://github.com/ghost-global-oficial/LLM_STUDIO/releases')}
+            >
+              <RefreshCw size={18} color={isDark ? '#FFF' : '#000'} style={{ marginRight: 8 }} />
+              <Text style={[styles.saveBtnText, { color: isDark ? '#FFF' : '#000' }]}>{t('checkUpdates')}</Text>
+            </TouchableOpacity>
           </View>
         </View>
       </Modal>
