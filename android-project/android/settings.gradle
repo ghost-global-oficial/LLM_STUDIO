@@ -20,6 +20,6 @@ plugins {
 
 reactSettings.autolinkLibrariesFromCommand()
 
-rootProject.name = 'temp-app'
+rootProject.name = 'talos-llm-studio'
 
 include ':app'

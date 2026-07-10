@@ -83,9 +83,9 @@ android {
     buildToolsVersion '34.0.0'
     compileSdk 34
 
-    namespace 'com.anonymous.tempapp'
+    namespace 'com.ghostsystems.talosllmstudio'
     defaultConfig {
-        applicationId 'com.anonymous.tempapp'
+        applicationId 'com.ghostsystems.talosllmstudio'
         minSdkVersion 24
         targetSdkVersion 34
         versionCode 1
@@ -104,15 +104,19 @@ android {
             keyAlias 'androiddebugkey'
             keyPassword 'android'
         }
+        release {
+            storeFile file('talos-release.keystore')
+            storePassword 'talos2026'
+            keyAlias 'talos-release'
+            keyPassword 'talos2026'
+        }
     }
     buildTypes {
         debug {
             signingConfig signingConfigs.debug
         }
         release {
-            // Caution! In production, you need to generate your own keystore file.
-            // see https://reactnative.dev/docs/signed-apk-android.
-            signingConfig signingConfigs.debug
+            signingConfig signingConfigs.release
             def enableShrinkResources = findProperty('android.enableShrinkResourcesInReleaseBuilds') ?: 'false'
             shrinkResources enableShrinkResources.toBoolean()
             minifyEnabled enableMinifyInReleaseBuilds

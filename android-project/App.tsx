@@ -163,17 +163,15 @@ function AppNavigator() {
   return (
     <NavigationContainer theme={isDark ? MyDarkTheme : MyLightTheme}>
       <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor={isDark ? '#0F0F0F' : '#F5F5F5'} />
-      <Stack.Navigator screenOptions={{ headerShown: false, contentStyle: { backgroundColor: isDark ? '#0F0F0F' : '#F5F5F5' } }}>
-        {!welcomeSeen ? (
-          <Stack.Screen name="Welcome" component={WelcomeScreen} />
-        ) : (
-          <>
-            <Stack.Screen name="MainTabs" component={MainTabs} />
-            <Stack.Screen name="Download" component={DownloadScreen} options={{ animation: 'slide_from_bottom' }} />
-            <Stack.Screen name="Chat" component={ChatScreen} options={{ animation: 'slide_from_right' }} />
-            <Stack.Screen name="Settings" component={SettingsScreen} options={{ animation: 'slide_from_right' }} />
-          </>
-        )}
+      <Stack.Navigator
+        initialRouteName={welcomeSeen ? 'MainTabs' : 'Welcome'}
+        screenOptions={{ headerShown: false, contentStyle: { backgroundColor: isDark ? '#0F0F0F' : '#F5F5F5' } }}
+      >
+        <Stack.Screen name="Welcome" component={WelcomeScreen} />
+        <Stack.Screen name="MainTabs" component={MainTabs} />
+        <Stack.Screen name="Download" component={DownloadScreen} options={{ animation: 'slide_from_bottom' }} />
+        <Stack.Screen name="Chat" component={ChatScreen} options={{ animation: 'slide_from_right' }} />
+        <Stack.Screen name="Settings" component={SettingsScreen} options={{ animation: 'slide_from_right' }} />
       </Stack.Navigator>
     </NavigationContainer>
   );

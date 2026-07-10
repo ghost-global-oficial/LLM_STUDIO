@@ -35,11 +35,13 @@ export default function WelcomeScreen({ navigation }: WelcomeScreenProps) {
       flatListRef.current?.scrollToIndex({ index: currentPage + 1, animated: true });
     } else {
       setWelcomeSeen(true);
+      navigation.reset({ index: 0, routes: [{ name: 'MainTabs' }] });
     }
   };
 
   const handleSkip = () => {
     setWelcomeSeen(true);
+    navigation.reset({ index: 0, routes: [{ name: 'MainTabs' }] });
   };
 
   const renderItem = ({ item, index }: { item: any; index: number }) => {
