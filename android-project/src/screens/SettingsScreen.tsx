@@ -28,33 +28,18 @@ export default function SettingsScreen({ navigation }: SettingsScreenProps) {
 
   useEffect(() => {
     const getHardwareInfo = async () => {
-      const constants = NativeModules.PlatformConstants || {};
-      const mem = NativeModules.MemoryInfo;
-      const deviceInfo = NativeModules.DeviceInfo;
-
-      let ram = 'N/A';
-      let vram = 'N/A';
-      let cpu = 'N/A';
-      let gpu = 'N/A';
-
-      // RAM
       try {
-        if (mem && mem.getMemoryInfo) {
-          const info = await mem.getMemoryInfo();
-          if (info && info.totalMemory) {
-            ram = `${(info.totalMemory / (1024 * 1024 * 1024)).toFixed(1)} GB`;
-          }
+        const DeviceModule = NativeModules.DeviceModule;
+        if (DeviceModule && DeviceModule.getHardwareInfo) {
+          const info = await DeviceModule.getHardwareInfo();
+          setHwInfo({
+            ram: info.ram || 'N/A',
+            vram: info.vram || 'N/A',
+            cpu: info.cpu || 'N/A',
+            gpu: info.gpu || 'N/A',
+          });
         }
       } catch (e) {}
-
-      // CPU
-      const arch = constants.arch || '';
-      const model = constants.model || '';
-      if (model || arch) {
-        cpu = `${model}${arch ? ' (' + arch + ')' : ''}`;
-      }
-
-      setHwInfo({ ram, vram, cpu, gpu });
     };
     getHardwareInfo();
   }, []);
