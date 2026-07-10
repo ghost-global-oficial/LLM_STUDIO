@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
-import { StyleSheet, Text, View, TouchableOpacity, Switch, ScrollView, TextInput, Modal, FlatList } from 'react-native';
-import { Moon, Sun, ArrowLeft, ExternalLink, Globe, MessageSquare } from 'lucide-react-native';
+import React, { useState, useEffect } from 'react';
+import { StyleSheet, Text, View, TouchableOpacity, Switch, ScrollView, TextInput, Modal, FlatList, Platform, NativeModules, Dimensions } from 'react-native';
+import { Moon, Sun, ArrowLeft, ExternalLink, Globe, MessageSquare, Cpu } from 'lucide-react-native';
 import { useTheme } from '../context/ThemeContext';
 import { useSettings, useTranslation, LANGUAGES, Language } from '../context/SettingsContext';
 
@@ -17,6 +17,24 @@ export default function SettingsScreen({ navigation }: SettingsScreenProps) {
   const [showLangModal, setShowLangModal] = useState(false);
   const [showPromptModal, setShowPromptModal] = useState(false);
   const [promptText, setPromptText] = useState(systemPrompt);
+
+  const [hwInfo, setHwInfo] = useState({
+    model: '',
+    os: '',
+    screen: '',
+    architecture: '',
+  });
+
+  useEffect(() => {
+    const constants = NativeModules.PlatformConstants || {};
+    const screen = Dimensions.get('window');
+    setHwInfo({
+      model: constants.Model || constants.model || Platform.OS,
+      os: `${Platform.OS} ${Platform.Version}`,
+      screen: `${Math.round(screen.width)} x ${Math.round(screen.height)}`,
+      architecture: constants.arch || 'N/A',
+    });
+  }, []);
 
   const arrowColor = isDark ? '#FFF' : '#FFF';
   const backBtnBg = isDark ? '#1E1E1E' : '#1E1E1E';
@@ -97,6 +115,58 @@ export default function SettingsScreen({ navigation }: SettingsScreenProps) {
                 trackColor={{ false: '#767577', true: '#3b82f6' }}
                 thumbColor={isDark ? '#FFF' : '#f4f3f4'}
               />
+            </View>
+          </View>
+
+          <View style={[styles.section, isDark ? styles.darkSection : styles.lightSection]}>
+            <Text style={[styles.sectionTitle, isDark ? styles.darkText : styles.lightText]}>{t('hardware')}</Text>
+
+            <View style={[styles.settingItem, isDark ? styles.darkSettingItem : styles.lightSettingItem]}>
+              <View style={styles.settingInfo}>
+                <Cpu size={22} color={isDark ? '#FFF' : '#000'} style={{ marginRight: 12 }} />
+                <View>
+                  <Text style={[styles.settingLabel, isDark ? styles.darkText : styles.lightText]}>{t('device')}</Text>
+                  <Text style={[styles.settingDescription, isDark ? styles.darkSecondaryText : styles.lightSecondaryText]}>
+                    {hwInfo.model}
+                  </Text>
+                </View>
+              </View>
+            </View>
+
+            <View style={[styles.settingItem, isDark ? styles.darkSettingItem : styles.lightSettingItem]}>
+              <View style={styles.settingInfo}>
+                <View style={{ width: 22, marginRight: 12 }} />
+                <View>
+                  <Text style={[styles.settingLabel, isDark ? styles.darkText : styles.lightText]}>{t('operatingSystem')}</Text>
+                  <Text style={[styles.settingDescription, isDark ? styles.darkSecondaryText : styles.lightSecondaryText]}>
+                    {hwInfo.os}
+                  </Text>
+                </View>
+              </View>
+            </View>
+
+            <View style={[styles.settingItem, isDark ? styles.darkSettingItem : styles.lightSettingItem]}>
+              <View style={styles.settingInfo}>
+                <View style={{ width: 22, marginRight: 12 }} />
+                <View>
+                  <Text style={[styles.settingLabel, isDark ? styles.darkText : styles.lightText]}>{t('screenResolution')}</Text>
+                  <Text style={[styles.settingDescription, isDark ? styles.darkSecondaryText : styles.lightSecondaryText]}>
+                    {hwInfo.screen}
+                  </Text>
+                </View>
+              </View>
+            </View>
+
+            <View style={[styles.settingItem, isDark ? styles.darkSettingItem : styles.lightSettingItem, { borderBottomWidth: 0 }]}>
+              <View style={styles.settingInfo}>
+                <View style={{ width: 22, marginRight: 12 }} />
+                <View>
+                  <Text style={[styles.settingLabel, isDark ? styles.darkText : styles.lightText]}>{t('architecture')}</Text>
+                  <Text style={[styles.settingDescription, isDark ? styles.darkSecondaryText : styles.lightSecondaryText]}>
+                    {hwInfo.architecture}
+                  </Text>
+                </View>
+              </View>
             </View>
           </View>
 
