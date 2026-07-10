@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, Text, View, TouchableOpacity, Switch, ScrollView, TextInput, Modal, FlatList, Platform, NativeModules, Linking } from 'react-native';
-import { Moon, Sun, ArrowLeft, ExternalLink, Globe, MessageSquare, Cpu, RefreshCw } from 'lucide-react-native';
+import { StyleSheet, Text, View, TouchableOpacity, Switch, ScrollView, TextInput, Modal, FlatList, Platform, NativeModules } from 'react-native';
+import { Moon, Sun, ArrowLeft, ExternalLink, Globe, MessageSquare, Cpu } from 'lucide-react-native';
 import { useTheme } from '../context/ThemeContext';
 import { useSettings, useTranslation, LANGUAGES, Language } from '../context/SettingsContext';
 
@@ -354,23 +354,10 @@ export default function SettingsScreen({ navigation }: SettingsScreenProps) {
               <Text style={[styles.hwValue, isDark ? styles.darkText : styles.lightText]}>0.4.0</Text>
             </View>
 
-            <View style={[styles.hwItem, { borderBottomColor: isDark ? '#2A2A2A' : '#E0E0E0' }]}>
+            <View style={[styles.hwItem, { borderBottomWidth: 0 }]}>
               <Text style={[styles.hwLabel, isDark ? styles.darkSecondaryText : styles.lightSecondaryText]}>Talos Engine</Text>
               <Text style={[styles.hwValue, isDark ? styles.darkText : styles.lightText]}>1.0.0</Text>
             </View>
-
-            <View style={[styles.hwItem, { borderBottomWidth: 0 }]}>
-              <Text style={[styles.hwLabel, isDark ? styles.darkSecondaryText : styles.lightSecondaryText]}>React Native</Text>
-              <Text style={[styles.hwValue, isDark ? styles.darkText : styles.lightText]}>{Platform.Version}</Text>
-            </View>
-
-            <TouchableOpacity
-              style={[styles.saveBtn, { marginTop: 16, backgroundColor: isDark ? '#2A2A2A' : '#E8E8E8' }]}
-              onPress={() => Linking.openURL('https://github.com/ghost-global-oficial/LLM_STUDIO/releases')}
-            >
-              <RefreshCw size={18} color={isDark ? '#FFF' : '#000'} style={{ marginRight: 8 }} />
-              <Text style={[styles.saveBtnText, { color: isDark ? '#FFF' : '#000' }]}>{t('checkUpdates')}</Text>
-            </TouchableOpacity>
           </View>
         </View>
       </Modal>
