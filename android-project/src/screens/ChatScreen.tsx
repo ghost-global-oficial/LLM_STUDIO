@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import {
   StyleSheet, Text, View, TextInput, TouchableOpacity, ScrollView,
-  KeyboardAvoidingView, Platform, ActivityIndicator, Alert
+  KeyboardAvoidingView, Platform, ActivityIndicator, Alert, NativeModules
 } from 'react-native';
 import { ArrowLeft, Bot, ArrowUp, Paperclip, Mic } from 'lucide-react-native';
 import { initLlama, LlamaContext } from 'llama.rn';
@@ -20,7 +20,7 @@ interface Message {
 
 export default function ChatScreen({ route, navigation }: Props) {
   const { isDark } = useTheme();
-  const { systemPrompt } = useSettings();
+  const { systemPrompt, performanceMode } = useSettings();
   const { t } = useTranslation();
   const { fileUri, fileName } = route.params;
   const [modelReady, setModelReady] = useState(false);
@@ -44,10 +44,27 @@ export default function ChatScreen({ route, navigation }: Props) {
         // No Android o C++ precisa do caminho absoluto limpo em vez da URI do Expo
         const absolutePath = fileUri.replace('file://', '');
 
+        // Get performance settings from native module
+        let perfSettings = { n_threads: 4, n_ctx: 1024, n_gpu_layers: 0, use_mlock: false };
+        try {
+          const DeviceModule = NativeModules.DeviceModule;
+          if (DeviceModule && DeviceModule.getPerformanceSettings) {
+            const settings = await DeviceModule.getPerformanceSettings(performanceMode);
+            perfSettings = {
+              n_threads: settings.n_threads || 4,
+              n_ctx: settings.n_ctx || 1024,
+              n_gpu_layers: settings.n_gpu_layers || 0,
+              use_mlock: settings.use_mlock || false,
+            };
+          }
+        } catch (e) {}
+
         llamaContext.current = await initLlama({
           model: absolutePath,
-          use_mlock: false, // Desabilitado para evitar falhas de permissão de memória no Android
-          n_ctx: 1024,
+          use_mlock: perfSettings.use_mlock,
+          n_ctx: perfSettings.n_ctx,
+          n_threads: perfSettings.n_threads,
+          n_gpu_layers: perfSettings.n_gpu_layers,
         });
 
         if (active) {
@@ -116,11 +133,39 @@ export default function ChatScreen({ route, navigation }: Props) {
 
       let hasStarted = false;
 
-      const response = await llamaContext.current.completion({
+      // Adjust inference parameters based on performance mode
+      const inferenceParams: Record<string, any> = {
         prompt: fullContext,
-        n_predict: 500,
         stop: [" <|end|>", "<|", "User:", "Assistant:"]
-      }, (data: any) => {
+      };
+
+      switch (performanceMode) {
+        case 'performance':
+          inferenceParams.n_predict = 1024;
+          inferenceParams.temperature = 0.8;
+          inferenceParams.top_p = 0.95;
+          inferenceParams.repeat_penalty = 1.1;
+          break;
+        case 'balanced':
+          inferenceParams.n_predict = 512;
+          inferenceParams.temperature = 0.7;
+          inferenceParams.top_p = 0.9;
+          inferenceParams.repeat_penalty = 1.15;
+          break;
+        case 'efficiency':
+          inferenceParams.n_predict = 256;
+          inferenceParams.temperature = 0.5;
+          inferenceParams.top_p = 0.85;
+          inferenceParams.repeat_penalty = 1.2;
+          break;
+        default:
+          inferenceParams.n_predict = 512;
+          inferenceParams.temperature = 0.7;
+          inferenceParams.top_p = 0.9;
+          inferenceParams.repeat_penalty = 1.15;
+      }
+
+      const response = await llamaContext.current.completion(inferenceParams, (data: any) => {
         if (!data) return;
 
         // Tenta capturar o texto de diversas propriedades comuns em diferentes versões da lib

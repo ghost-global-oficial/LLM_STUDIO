@@ -130,4 +130,51 @@ class DeviceModule(reactContext: ReactApplicationContext) : ReactContextBaseJava
             promise.reject("ERROR", e.message)
         }
     }
+
+    @ReactMethod
+    fun getPerformanceSettings(mode: String, promise: Promise) {
+        try {
+            val map = Arguments.createMap()
+            val cpuCores = Runtime.getRuntime().availableProcessors()
+            val totalRamMB = try {
+                val activityManager = reactApplicationContext.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
+                val memInfo = ActivityManager.MemoryInfo()
+                activityManager.getMemoryInfo(memInfo)
+                (memInfo.totalMem / (1024 * 1024)).toInt()
+            } catch (e: Exception) { 4096 }
+
+            when (mode) {
+                "performance" -> {
+                    map.putInt("n_threads", cpuCores)
+                    map.putInt("n_ctx", if (totalRamMB >= 6144) 4096 else 2048)
+                    map.putInt("n_gpu_layers", if (totalRamMB >= 6144) 99 else 33)
+                    map.putBoolean("use_mlock", true)
+                }
+                "balanced" -> {
+                    map.putInt("n_threads", (cpuCores * 0.75).toInt().coerceAtLeast(2))
+                    map.putInt("n_ctx", if (totalRamMB >= 6144) 2048 else 1024)
+                    map.putInt("n_gpu_layers", if (totalRamMB >= 6144) 33 else 0)
+                    map.putBoolean("use_mlock", false)
+                }
+                "efficiency" -> {
+                    map.putInt("n_threads", (cpuCores * 0.5).toInt().coerceAtLeast(2))
+                    map.putInt("n_ctx", 512)
+                    map.putInt("n_gpu_layers", 0)
+                    map.putBoolean("use_mlock", false)
+                }
+                else -> {
+                    map.putInt("n_threads", (cpuCores * 0.75).toInt().coerceAtLeast(2))
+                    map.putInt("n_ctx", 1024)
+                    map.putInt("n_gpu_layers", 0)
+                    map.putBoolean("use_mlock", false)
+                }
+            }
+
+            map.putInt("cpu_cores", cpuCores)
+            map.putInt("total_ram_mb", totalRamMB)
+            promise.resolve(map)
+        } catch (e: Exception) {
+            promise.reject("ERROR", e.message)
+        }
+    }
 }

@@ -1,12 +1,12 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, Switch, TextInput, TouchableOpacity, Alert, Platform, Modal } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Switch, TextInput, TouchableOpacity, Alert, Platform, Modal, NativeModules } from 'react-native';
 import Clipboard from '@react-native-clipboard/clipboard';
 import { Server, Shield, Globe, Cpu, Square, Copy, RefreshCw, Settings, Plus, Trash2, ChevronRight, X, Wifi } from 'lucide-react-native';
 import httpbridge from 'react-native-http-bridge-refurbished';
 import { initLlama, LlamaContext } from 'llama.rn';
 import RNFS from 'react-native-fs';
 import { useTheme } from '../context/ThemeContext';
-import { useTranslation } from '../context/SettingsContext';
+import { useTranslation, useSettings } from '../context/SettingsContext';
 
 const MODELS_DIR = `${RNFS.DocumentDirectoryPath}/models/`;
 const CONFIG_FILE = `${RNFS.DocumentDirectoryPath}server_config.json`;
@@ -39,6 +39,7 @@ const DEFAULT_HARDWARE: HardwareConfig = { threads: '4', nCtx: '4096', gpuLayers
 export default function ServerScreen() {
   const { isDark } = useTheme();
   const { t } = useTranslation();
+  const { performanceMode } = useSettings();
   const [isServerActive, setIsServerActive] = useState(false);
   const [port, setPort] = useState('1234');
   const [apiKey, setApiKey] = useState('lm-studio-v1-key-secret');
@@ -218,12 +219,27 @@ export default function ServerScreen() {
       setActiveModels(prev => prev.map(m => m.id === model.id ? { ...m, status: 'loading' } : m));
       addLog(`Carregando: ${model.name}...`);
 
+      // Get performance settings from native module
+      let perfSettings = { n_threads: 4, n_ctx: 2048, n_gpu_layers: 0, use_mlock: false };
+      try {
+        const DeviceModule = NativeModules.DeviceModule;
+        if (DeviceModule && DeviceModule.getPerformanceSettings) {
+          const settings = await DeviceModule.getPerformanceSettings(performanceMode);
+          perfSettings = {
+            n_threads: settings.n_threads || 4,
+            n_ctx: settings.n_ctx || 2048,
+            n_gpu_layers: settings.n_gpu_layers || 0,
+            use_mlock: settings.use_mlock || false,
+          };
+        }
+      } catch (e) {}
+
       const absolutePath = model.uri.startsWith('file://') ? model.uri.replace('file://', '') : model.uri;
       const ctx = await initLlama({
         model: absolutePath,
-        n_ctx: Math.max(512, parseInt(model.hardware.nCtx)) || 2048,
-        n_threads: Math.max(1, parseInt(model.hardware.threads)) || 4,
-        n_gpu_layers: Math.max(0, parseInt(model.hardware.gpuLayers)) || 0,
+        n_ctx: Math.max(perfSettings.n_ctx, parseInt(model.hardware.nCtx)) || perfSettings.n_ctx,
+        n_threads: Math.max(1, Math.max(perfSettings.n_threads, parseInt(model.hardware.threads))) || perfSettings.n_threads,
+        n_gpu_layers: Math.max(perfSettings.n_gpu_layers, parseInt(model.hardware.gpuLayers)) || perfSettings.n_gpu_layers,
         use_mlock: model.hardware.useMlock,
       });
 
