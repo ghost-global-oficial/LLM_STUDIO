@@ -66,39 +66,22 @@ export default function DownloadScreen({ navigation }: Props) {
 
     const getModelFileSize = async (modelId: string): Promise<{ size: string, downloadUrl: string }> => {
       try {
-        const response = await fetch(`https://huggingface.co/api/models/${modelId}`);
-        if (!response.ok) throw new Error('Model not found');
-        const data = await response.json();
-        let downloadUrl = '';
-        let totalSize = 0;
-        if (data.siblings) {
-          const ggufFiles = data.siblings.filter((f: any) => f.rfilename && f.rfilename.endsWith('.gguf'));
-          if (ggufFiles.length > 0) {
-            const ggufFile = ggufFiles.find((f: any) => f.rfilename.toLowerCase().includes('q4_k_m'))
-              || ggufFiles.find((f: any) => f.rfilename.toLowerCase().includes('q4_k'))
-              || ggufFiles.find((f: any) => f.rfilename.toLowerCase().includes('q4_0'))
-              || ggufFiles[0];
-            downloadUrl = `https://huggingface.co/${modelId}/resolve/main/${encodeURIComponent(ggufFile.rfilename)}?download=true`;
-            if (ggufFile.size) {
-              totalSize = ggufFile.size;
-            } else {
-              // Sum sizes from all GGUF files as fallback
-              for (const f of ggufFiles) {
-                if (f.size && f.size > 0) totalSize += f.size;
-              }
-            }
-          }
-        }
-        // If size not found from API, try HEAD request to get Content-Length
-        if (totalSize <= 0 && downloadUrl) {
-          try {
-            const headResp = await fetch(downloadUrl, { method: 'HEAD', redirect: 'follow', signal: AbortSignal.timeout(8000) });
-            const contentLength = headResp.headers.get('content-length');
-            if (contentLength && parseInt(contentLength, 10) > 0) {
-              totalSize = parseInt(contentLength, 10);
-            }
-          } catch {}
-        }
+        // Use /tree/main endpoint which returns size for each file
+        const treeResponse = await fetch(`https://huggingface.co/api/models/${modelId}/tree/main`);
+        if (!treeResponse.ok) throw new Error('Tree not found');
+        const treeData = await treeResponse.json();
+
+        const ggufFiles = treeData.filter((f: any) => f.path && f.path.endsWith('.gguf'));
+        if (ggufFiles.length === 0) return { size: 'N/A', downloadUrl: '' };
+
+        // Prefer Q4_K_M, then Q4_K, then Q4_0, then first
+        const ggufFile = ggufFiles.find((f: any) => f.path.toLowerCase().includes('q4_k_m'))
+          || ggufFiles.find((f: any) => f.path.toLowerCase().includes('q4_k'))
+          || ggufFiles.find((f: any) => f.path.toLowerCase().includes('q4_0'))
+          || ggufFiles[0];
+
+        const totalSize = ggufFile.size || 0;
+        const downloadUrl = `https://huggingface.co/${modelId}/resolve/main/${encodeURIComponent(ggufFile.path)}?download=true`;
         const sizeStr = totalSize > 0
           ? (totalSize / 1024 / 1024 / 1024).toFixed(1) + ' GB'
           : 'N/A';
