@@ -2,6 +2,7 @@ import React from 'react';
 import { StyleSheet, Text, View, TouchableOpacity, ScrollView } from 'react-native';
 import { ArrowLeft } from 'lucide-react-native';
 import { useTheme } from '../context/ThemeContext';
+import { useTranslation } from '../context/SettingsContext';
 
 interface DocSection {
   title: string;
@@ -21,6 +22,7 @@ interface DocDetailScreenProps {
 
 export default function DocDetailScreen({ navigation, route }: DocDetailScreenProps) {
   const { isDark } = useTheme();
+  const { t } = useTranslation();
   const { title, sections } = route.params;
 
   const bgColor = isDark ? '#0F0F0F' : '#F5F5F5';
@@ -46,7 +48,7 @@ export default function DocDetailScreen({ navigation, route }: DocDetailScreenPr
             <Text style={[styles.sectionContent, { color: secondaryText }]}>{section.content}</Text>
             {section.tips && section.tips.length > 0 && (
               <View style={[styles.tipsContainer, { borderTopColor: cardBorder }]}>
-                <Text style={[styles.tipsTitle, { color: textColor }]}>Dicas</Text>
+                <Text style={[styles.tipsTitle, { color: textColor }]}>{t('tips')}</Text>
                 {section.tips.map((tip, i) => (
                   <Text key={i} style={[styles.tipText, { color: secondaryText }]}>• {tip}</Text>
                 ))}
