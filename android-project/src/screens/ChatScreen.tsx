@@ -10,6 +10,7 @@ import { RootStackParamList } from '../../App';
 import { useTheme } from '../context/ThemeContext';
 import { useSettings, useTranslation } from '../context/SettingsContext';
 import { useSkills } from '../context/SkillsContext';
+import { useEncryption } from '../context/EncryptionContext';
 import RNFS from 'react-native-fs';
 
 const HISTORY_DIR = `${RNFS.DocumentDirectoryPath}/chat_history`;
@@ -60,6 +61,7 @@ export default function ChatScreen({ route, navigation }: Props) {
   const { systemPrompt, performanceMode } = useSettings();
   const { t } = useTranslation();
   const { skills, executeSkill, getSystemPromptWithTools } = useSkills();
+  const { encrypt, decrypt } = useEncryption();
   const { fileUri, fileName, loadHistory } = route.params;
   const [modelReady, setModelReady] = useState(false);
   const [loading, setLoading] = useState(!loadHistory);
@@ -85,7 +87,9 @@ export default function ChatScreen({ route, navigation }: Props) {
         messages: msgs.filter(m => !m.isToolCall && !m.isToolResult),
         savedAt: new Date().toISOString(),
       };
-      await RNFS.writeFile(`${HISTORY_DIR}/${conversationId.current}.json`, JSON.stringify(item), 'utf8');
+      const json = JSON.stringify(item);
+      const encrypted = encrypt(json);
+      await RNFS.writeFile(`${HISTORY_DIR}/${conversationId.current}.enc`, encrypted, 'utf8');
     } catch (e) {}
   };
 

@@ -5,6 +5,7 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../App';
 import { useTheme } from '../context/ThemeContext';
 import { useTranslation } from '../context/SettingsContext';
+import { useEncryption } from '../context/EncryptionContext';
 import RNFS from 'react-native-fs';
 
 const HISTORY_DIR = `${RNFS.DocumentDirectoryPath}/chat_history`;
@@ -22,6 +23,7 @@ type Props = NativeStackScreenProps<RootStackParamList, 'ChatHistory'>;
 export default function ChatHistoryScreen({ navigation }: Props) {
   const { isDark } = useTheme();
   const { t } = useTranslation();
+  const { decrypt } = useEncryption();
   const [history, setHistory] = useState<ChatHistoryItem[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [showSearch, setShowSearch] = useState(false);
@@ -40,12 +42,16 @@ export default function ChatHistoryScreen({ navigation }: Props) {
       const exists = await RNFS.exists(HISTORY_DIR);
       if (!exists) return;
       const files = await RNFS.readDir(HISTORY_DIR);
-      const jsonFiles = files.filter(f => f.name.endsWith('.json'));
       const items: ChatHistoryItem[] = [];
-      for (const file of jsonFiles) {
+      for (const file of files) {
         try {
           const raw = await RNFS.readFile(file.path, 'utf8');
-          items.push(JSON.parse(raw));
+          if (file.name.endsWith('.enc')) {
+            const decrypted = decrypt(raw);
+            if (decrypted) items.push(JSON.parse(decrypted));
+          } else if (file.name.endsWith('.json')) {
+            items.push(JSON.parse(raw));
+          }
         } catch {}
       }
       items.sort((a, b) => new Date(b.savedAt).getTime() - new Date(a.savedAt).getTime());
@@ -59,7 +65,10 @@ export default function ChatHistoryScreen({ navigation }: Props) {
       {
         text: t('remove'), style: 'destructive', onPress: async () => {
           try {
-            await RNFS.unlink(`${HISTORY_DIR}/${id}.json`);
+            const encPath = `${HISTORY_DIR}/${id}.enc`;
+            const jsonPath = `${HISTORY_DIR}/${id}.json`;
+            if (await RNFS.exists(encPath)) await RNFS.unlink(encPath);
+            if (await RNFS.exists(jsonPath)) await RNFS.unlink(jsonPath);
             setHistory(prev => prev.filter(h => h.id !== id));
           } catch {}
         }

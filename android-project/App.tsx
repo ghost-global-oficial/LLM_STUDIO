@@ -9,6 +9,7 @@ import { ThemeProvider, useTheme } from './src/context/ThemeContext';
 import { DownloadProvider } from './src/context/DownloadContext';
 import { SettingsProvider, useSettings } from './src/context/SettingsContext';
 import { SkillsProvider } from './src/context/SkillsContext';
+import { EncryptionProvider } from './src/context/EncryptionContext';
 import ModelsScreen from './src/screens/ModelsScreen';
 import ChatScreen from './src/screens/ChatScreen';
 import ServerScreen from './src/screens/ServerScreen';
@@ -188,11 +189,13 @@ export default function App() {
   return (
     <ThemeProvider>
       <SettingsProvider>
-        <SkillsProvider>
-          <DownloadProvider>
-            <AppNavigator />
-          </DownloadProvider>
-        </SkillsProvider>
+        <EncryptionProvider>
+          <SkillsProvider>
+            <DownloadProvider>
+              <AppNavigator />
+            </DownloadProvider>
+          </SkillsProvider>
+        </EncryptionProvider>
       </SettingsProvider>
     </ThemeProvider>
   );
