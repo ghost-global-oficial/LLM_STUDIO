@@ -42,11 +42,18 @@ const BUILTIN_SKILLS: Omit<Skill, 'id'>[] = [
     parameters: [
       { name: 'query', type: 'string', description: 'Search query', required: true },
     ],
-    handlerCode: `const url = 'https://lite.duckduckgo.com/lite/?q=' + encodeURIComponent(params.query);
+    handlerCode: `const url = 'https://api.duckduckgo.com/?q=' + encodeURIComponent(params.query) + '&format=json&no_html=1';
 const resp = await fetch(url);
-const html = await resp.text();
-const textOnly = html.replace(/<[^>]+>/g, ' ').replace(/\\s+/g, ' ').trim();
-return { result: textOnly.substring(0, 3000), query: params.query };`,
+const data = await resp.json();
+const results = [];
+if (data.AbstractText) results.push(data.AbstractText);
+if (data.RelatedTopics) {
+  data.RelatedTopics.slice(0, 5).forEach(t => {
+    if (t.Text) results.push(t.Text);
+  });
+}
+if (results.length === 0 && data.Answer) results.push(data.Answer);
+return { query: params.query, results: results.length > 0 ? results.join('\\n\\n') : 'No results found', abstract: data.AbstractText || '', source: data.AbstractURL || '' };`,
   },
   {
     name: 'calculate',
@@ -56,10 +63,10 @@ return { result: textOnly.substring(0, 3000), query: params.query };`,
     parameters: [
       { name: 'expression', type: 'string', description: 'Math expression (e.g. 2+2*3)', required: true },
     ],
-    handlerCode: `const expr = params.expression.replace(/[^0-9+\\-*/().]/g, '');
+    handlerCode: `const expr = params.expression.replace(/[^0-9+\\-*/().% ]/g, '');
 if (!expr) throw new Error('Invalid expression');
-const result = Function('"use strict"; return (' + expr + ')')();
-return { expression: params.expression, result };`,
+const result = eval(expr);
+return { expression: params.expression, result: result };`,
   },
   {
     name: 'read_file',
@@ -69,10 +76,10 @@ return { expression: params.expression, result };`,
     parameters: [
       { name: 'path', type: 'string', description: 'File path', required: true },
     ],
-    handlerCode: `const path = params.path.startsWith('/') ? params.path : RNFS.DocumentDirectoryPath + '/' + params.path;
-const exists = await RNFS.exists(path);
+    handlerCode: `const filePath = params.path.startsWith('/') ? params.path : RNFS.DocumentDirectoryPath + '/' + params.path;
+const exists = await RNFS.exists(filePath);
 if (!exists) throw new Error('File not found: ' + params.path);
-const content = await RNFS.readFile(path, 'utf8');
+const content = await RNFS.readFile(filePath, 'utf8');
 return { path: params.path, content: content.substring(0, 5000), size: content.length };`,
   },
   {
@@ -84,8 +91,8 @@ return { path: params.path, content: content.substring(0, 5000), size: content.l
       { name: 'path', type: 'string', description: 'File path', required: true },
       { name: 'content', type: 'string', description: 'Content to write', required: true },
     ],
-    handlerCode: `const path = params.path.startsWith('/') ? params.path : RNFS.DocumentDirectoryPath + '/' + params.path;
-await RNFS.writeFile(path, params.content, 'utf8');
+    handlerCode: `const filePath = params.path.startsWith('/') ? params.path : RNFS.DocumentDirectoryPath + '/' + params.path;
+await RNFS.writeFile(filePath, params.content, 'utf8');
 return { path: params.path, written: params.content.length + ' bytes' };`,
   },
   {
