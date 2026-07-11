@@ -1,8 +1,11 @@
+export type ModelType = 'text' | 'image' | 'video' | '3d';
+
 export interface AIModel {
   id: string;
   name: string;
   size: string;
   downloadUrl: string;
+  type?: ModelType;
 }
 
 export const AVAILABLE_MODELS: AIModel[] = [
@@ -213,4 +216,21 @@ export const AVAILABLE_MODELS: AIModel[] = [
   { id: 'litgpt-7b', name: 'LitGPT 7B (Q4_K_M)', size: '4.4 GB', downloadUrl: 'https://huggingface.co/lmstudio-community/LitGPT-7B-GGUF/resolve/main/litgpt-7b-q4_k_m.gguf?download=true' },
   { id: 'palm-2-24b', name: 'PaLM 2 24B (Q4_K_M)', size: '14.5 GB', downloadUrl: 'https://huggingface.co/lmstudio-community/PaLM-2-24B-GGUF/resolve/main/palm-2-24b-q4_k_m.gguf?download=true' },
   { id: 'dolphin-2.9-7b', name: 'Dolphin 2.9 7B (Q4_K_M)', size: '4.4 GB', downloadUrl: 'https://huggingface.co/lmstudio-community/dolphin-2.9-llama-7b-GGUF/resolve/main/dolphin-2.9-llama-7b-q4_k_m.gguf?download=true' },
+
+  // --- MODELOS DE GERACAO DE IMAGEM (AirLLM) ---
+  { id: 'stable-diffusion-xl', name: 'Stable Diffusion XL Base 1.0 (F16)', size: '6.9 GB', downloadUrl: 'https://huggingface.co/stabilityai/stable-diffusion-xl-base-1.0/resolve/main/sd_xl_base_1.0.safetensors?download=true', type: 'image' },
+  { id: 'stable-diffusion-3-medium', name: 'Stable Diffusion 3 Medium (F16)', size: '8.1 GB', downloadUrl: 'https://huggingface.co/stabilityai/stable-diffusion-3-medium/resolve/main/sd3_medium.safetensors?download=true', type: 'image' },
+  { id: 'flux-1-dev', name: 'FLUX.1 Dev (F16)', size: '23.8 GB', downloadUrl: 'https://huggingface.co/black-forest-labs/FLUX.1-dev/resolve/main/flux1-dev.safetensors?download=true', type: 'image' },
+  { id: 'flux-1-schnell', name: 'FLUX.1 Schnell (F16)', size: '23.8 GB', downloadUrl: 'https://huggingface.co/black-forest-labs/FLUX.1-schnell/resolve/main/flux1-schnell.safetensors?download=true', type: 'image' },
+  { id: 'sd-1-5', name: 'Stable Diffusion 1.5 (F16)', size: '4.3 GB', downloadUrl: 'https://huggingface.co/runwayml/stable-diffusion-v1-5/resolve/main/v1-5-pruned-emaonly.safetensors?download=true', type: 'image' },
+  { id: 'dreamshaper-xl', name: 'DreamShaper XL (F16)', size: '6.9 GB', downloadUrl: 'https://huggingface.co/Lykon/dreamshaper-xl-v2-turbo/resolve/main/DreamShaperXL_v2_turbo.safetensors?download=true', type: 'image' },
+
+  // --- MODELOS DE GERACAO DE VIDEO (AirLLM) ---
+  { id: 'cogvideox-2b', name: 'CogVideoX 2B (BF16)', size: '5.2 GB', downloadUrl: 'https://huggingface.co/THUDM/CogVideoX-2b/resolve/main/cogvideox-2b.safetensors?download=true', type: 'video' },
+  { id: 'cogvideox-5b', name: 'CogVideoX 5B (BF16)', size: '10.4 GB', downloadUrl: 'https://huggingface.co/THUDM/CogVideoX-5b/resolve/main/cogvideox-5b.safetensors?download=true', type: 'video' },
+  { id: 'wan-1-3b-video', name: 'Wan 2.1 1.3B Video (F16)', size: '2.8 GB', downloadUrl: 'https://huggingface.co/Wan-AI/Wan2.1-T2V-1.3B/resolve/main/model.safetensors?download=true', type: 'video' },
+
+  // --- MODELOS DE GERACAO 3D (AirLLM) ---
+  { id: 'triposr', name: 'TripoSR (F16)', size: '1.8 GB', downloadUrl: 'https://huggingface.co/StabilityAI/TripoSR/resolve/main/TripoSR.safetensors?download=true', type: '3d' },
+  { id: 'instantmesh', name: 'InstantMesh (F16)', size: '2.1 GB', downloadUrl: 'https://huggingface.co/TencentARC/InstantMesh/resolve/main/instant_mesh.safetensors?download=true', type: '3d' },
 ];

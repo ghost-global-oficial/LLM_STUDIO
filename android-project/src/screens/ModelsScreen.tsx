@@ -6,9 +6,10 @@ import RNFS from 'react-native-fs';
 import { useNavigation, useIsFocused } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../App';
-import { AVAILABLE_MODELS, AIModel } from '../data/modelsData';
+import { AVAILABLE_MODELS, AIModel, ModelType } from '../data/modelsData';
 import { useTheme } from '../context/ThemeContext';
 import { useTranslation } from '../context/SettingsContext';
+import AirLLMCard from '../components/AirLLMCard';
 
 const MODELS_DIR = `${RNFS.DocumentDirectoryPath}/models/`;
 
@@ -19,6 +20,12 @@ export default function ModelsScreen() {
   const { t } = useTranslation();
   const [localModels, setLocalModels] = useState<{ name: string, uri: string, size: number }[]>([]);
   const [showSelectionMenu, setShowSelectionMenu] = useState(false);
+  const [showAirLLMCard, setShowAirLLMCard] = useState(false);
+  const [selectedModelType, setSelectedModelType] = useState<ModelType>('text');
+  const [selectedModelName, setSelectedModelName] = useState('');
+  const [selectedModelUri, setSelectedModelUri] = useState('');
+  const [pendingModelUri, setPendingModelUri] = useState('');
+  const [pendingModelName, setPendingModelName] = useState('');
 
   const loadLocalDirectory = async () => {
     try {
@@ -103,9 +110,41 @@ export default function ModelsScreen() {
     });
   }, [showSelectionMenu, navigation, isDark]);
 
+  const detectModelType = (fileName: string): ModelType => {
+    const lower = fileName.toLowerCase();
+    if (lower.includes('sd_') || lower.includes('stable-diffusion') || lower.includes('flux') || lower.includes('dreamshaper') || lower.includes('sdxl')) {
+      return 'image';
+    }
+    if (lower.includes('cogvideo') || lower.includes('wan') && lower.includes('video')) {
+      return 'video';
+    }
+    if (lower.includes('triposr') || lower.includes('instantmesh') || lower.includes('3d')) {
+      return '3d';
+    }
+    return 'text';
+  };
+
   const navigateToChat = (fileUri: string, fileName: string) => {
     setShowSelectionMenu(false);
-    navigation.navigate('Chat', { fileUri, fileName });
+    const modelType = detectModelType(fileName);
+    if (modelType !== 'text') {
+      setSelectedModelType(modelType);
+      setSelectedModelName(fileName);
+      setSelectedModelUri(fileUri);
+      setShowAirLLMCard(true);
+    } else {
+      navigation.navigate('Chat', { fileUri, fileName });
+    }
+  };
+
+  const handleAirLLMActivate = () => {
+    setShowAirLLMCard(false);
+    navigation.navigate('Chat', { fileUri: selectedModelUri, fileName: selectedModelName });
+  };
+
+  const handleAirLLMDecline = () => {
+    setShowAirLLMCard(false);
+    navigation.navigate('Chat', { fileUri: selectedModelUri, fileName: selectedModelName });
   };
 
 
@@ -213,6 +252,14 @@ export default function ModelsScreen() {
           </View>
         </TouchableOpacity>
       </Modal>
+
+      <AirLLMCard
+        visible={showAirLLMCard}
+        modelType={selectedModelType}
+        modelName={selectedModelName}
+        onActivate={handleAirLLMActivate}
+        onDecline={handleAirLLMDecline}
+      />
     </View>
   );
 }

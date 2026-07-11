@@ -11,6 +11,8 @@ import { useTheme } from '../context/ThemeContext';
 import { useSettings, useTranslation } from '../context/SettingsContext';
 import { useSkills } from '../context/SkillsContext';
 import { useEncryption } from '../context/EncryptionContext';
+import { ModelType } from '../data/modelsData';
+import AirLLMCard from '../components/AirLLMCard';
 import RNFS from 'react-native-fs';
 
 const HISTORY_DIR = `${RNFS.DocumentDirectoryPath}/chat_history`;
@@ -70,6 +72,8 @@ export default function ChatScreen({ route, navigation }: Props) {
   );
   const [inputText, setInputText] = useState('');
   const [inputHeight, setInputHeight] = useState(34);
+  const [showAirLLMCard, setShowAirLLMCard] = useState(false);
+  const [modelType, setModelType] = useState<ModelType>('text');
   const llamaContext = useRef<LlamaContext | null>(null);
   const scrollViewRef = useRef<ScrollView>(null);
   const conversationId = useRef<string>(Date.now().toString());
@@ -97,6 +101,28 @@ export default function ChatScreen({ route, navigation }: Props) {
     if (!fileUri) {
       setModelReady(false);
       setLoading(false);
+      return;
+    }
+
+    const detectType = (name: string): ModelType => {
+      const lower = name.toLowerCase();
+      if (lower.includes('sd_') || lower.includes('stable-diffusion') || lower.includes('flux') || lower.includes('dreamshaper') || lower.includes('sdxl')) {
+        return 'image';
+      }
+      if (lower.includes('cogvideo') || (lower.includes('wan') && lower.includes('video'))) {
+        return 'video';
+      }
+      if (lower.includes('triposr') || lower.includes('instantmesh') || lower.includes('3d')) {
+        return '3d';
+      }
+      return 'text';
+    };
+
+    const detectedType = detectType(fileName);
+    setModelType(detectedType);
+
+    if (detectedType !== 'text') {
+      setShowAirLLMCard(true);
       return;
     }
 
@@ -455,6 +481,96 @@ export default function ChatScreen({ route, navigation }: Props) {
           </TouchableOpacity>
         </View>
       </View>
+
+      <AirLLMCard
+        visible={showAirLLMCard}
+        modelType={modelType}
+        modelName={fileName}
+        onActivate={() => {
+          setShowAirLLMCard(false);
+          let active = true;
+          const startLlamaSession = async () => {
+            try {
+              setLoading(true);
+              if (llamaContext.current) {
+                await llamaContext.current.release();
+              }
+              const absolutePath = fileUri.replace('file://', '');
+              let perfSettings = { n_threads: 4, n_ctx: 1024, n_gpu_layers: 0, use_mlock: false };
+              try {
+                const DeviceModule = NativeModules.DeviceModule;
+                if (DeviceModule && DeviceModule.getPerformanceSettings) {
+                  const settings = await DeviceModule.getPerformanceSettings(performanceMode);
+                  perfSettings = {
+                    n_threads: settings.n_threads || 4,
+                    n_ctx: settings.n_ctx || 1024,
+                    n_gpu_layers: settings.n_gpu_layers || 0,
+                    use_mlock: settings.use_mlock || false,
+                  };
+                }
+              } catch (e) {}
+              llamaContext.current = await initLlama({
+                model: absolutePath,
+                use_mlock: perfSettings.use_mlock,
+                n_ctx: perfSettings.n_ctx,
+                n_threads: perfSettings.n_threads,
+                n_gpu_layers: perfSettings.n_gpu_layers,
+              });
+              if (active) {
+                setModelReady(true);
+                setLoading(false);
+              }
+            } catch (error: any) {
+              if (!active) return;
+              setLoading(false);
+              Alert.alert(t('modelError'), String(error));
+            }
+          };
+          startLlamaSession();
+        }}
+        onDecline={() => {
+          setShowAirLLMCard(false);
+          let active = true;
+          const startLlamaSession = async () => {
+            try {
+              setLoading(true);
+              if (llamaContext.current) {
+                await llamaContext.current.release();
+              }
+              const absolutePath = fileUri.replace('file://', '');
+              let perfSettings = { n_threads: 4, n_ctx: 1024, n_gpu_layers: 0, use_mlock: false };
+              try {
+                const DeviceModule = NativeModules.DeviceModule;
+                if (DeviceModule && DeviceModule.getPerformanceSettings) {
+                  const settings = await DeviceModule.getPerformanceSettings(performanceMode);
+                  perfSettings = {
+                    n_threads: settings.n_threads || 4,
+                    n_ctx: settings.n_ctx || 1024,
+                    n_gpu_layers: settings.n_gpu_layers || 0,
+                    use_mlock: settings.use_mlock || false,
+                  };
+                }
+              } catch (e) {}
+              llamaContext.current = await initLlama({
+                model: absolutePath,
+                use_mlock: perfSettings.use_mlock,
+                n_ctx: perfSettings.n_ctx,
+                n_threads: perfSettings.n_threads,
+                n_gpu_layers: perfSettings.n_gpu_layers,
+              });
+              if (active) {
+                setModelReady(true);
+                setLoading(false);
+              }
+            } catch (error: any) {
+              if (!active) return;
+              setLoading(false);
+              Alert.alert(t('modelError'), String(error));
+            }
+          };
+          startLlamaSession();
+        }}
+      />
     </KeyboardAvoidingView>
   );
 }
