@@ -13,6 +13,7 @@ import ChatScreen from './src/screens/ChatScreen';
 import ServerScreen from './src/screens/ServerScreen';
 import SkillsScreen from './src/screens/SkillsScreen';
 import DocsScreen from './src/screens/DocsScreen';
+import DocDetailScreen from './src/screens/DocDetailScreen';
 import SettingsScreen from './src/screens/SettingsScreen';
 import DownloadScreen from './src/screens/DownloadScreen';
 import WelcomeScreen from './src/screens/WelcomeScreen';
@@ -23,6 +24,7 @@ export type RootStackParamList = {
   Chat: { fileUri: string; fileName: string };
   Download: undefined;
   Settings: undefined;
+  DocDetail: { title: string; sections: { title: string; content: string; tips?: string[] }[] };
 };
 
 export type MainTabParamList = {
@@ -172,6 +174,7 @@ function AppNavigator() {
         <Stack.Screen name="Download" component={DownloadScreen} options={{ animation: 'slide_from_bottom' }} />
         <Stack.Screen name="Chat" component={ChatScreen} options={{ animation: 'slide_from_right' }} />
         <Stack.Screen name="Settings" component={SettingsScreen} options={{ animation: 'slide_from_right' }} />
+        <Stack.Screen name="DocDetail" component={DocDetailScreen} options={{ animation: 'slide_from_right' }} />
       </Stack.Navigator>
     </NavigationContainer>
   );

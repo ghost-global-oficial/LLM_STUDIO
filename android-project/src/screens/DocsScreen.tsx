@@ -1,10 +1,14 @@
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Linking } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { FileText, Cpu, Globe, Rocket, HelpCircle, ChevronRight, Zap } from 'lucide-react-native';
 import { useTheme } from '../context/ThemeContext';
 import { useTranslation } from '../context/SettingsContext';
 
-export default function DocsScreen() {
+interface DocDetailProps {
+  navigation: any;
+}
+
+export default function DocsScreen({ navigation }: DocDetailProps) {
   const { isDark } = useTheme();
   const { t } = useTranslation();
 
@@ -20,32 +24,40 @@ export default function DocsScreen() {
       title: t('docGguf'),
       icon: <Cpu size={24} color="#FF9500" />,
       content: t('docGgufDesc'),
-      link: 'https://huggingface.co/models?search=gguf'
+      docSections: [
+        { title: t('docGgufTitle'), content: t('docGgufContent'), tips: [t('docGgufTip1'), t('docGgufTip2'), t('docGgufTip3'), t('docGgufTip4')] },
+      ],
     },
     {
       title: t('docServer'),
       icon: <Globe size={24} color="#34C759" />,
       content: t('docServerDesc'),
-      link: 'https://github.com/ghost-global-oficial/LLM_STUDIO/wiki'
+      docSections: [
+        { title: t('docServerTitle'), content: t('docServerContent'), tips: [t('docServerTip1'), t('docServerTip2'), t('docServerTip3'), t('docServerTip4')] },
+      ],
     },
     {
       title: t('docPerformance'),
       icon: <Zap size={24} color="#5856D6" />,
       content: t('docPerformanceDesc'),
-      link: 'https://github.com/ghost-global-oficial/LLM_STUDIO/wiki'
+      docSections: [
+        { title: t('docPerfTitle'), content: t('docPerfContent'), tips: [t('docPerfTip1'), t('docPerfTip2'), t('docPerfTip3'), t('docPerfTip4'), t('docPerfTip5')] },
+      ],
     },
     {
       title: t('docSkills'),
       icon: <Rocket size={24} color="#007AFF" />,
       content: t('docSkillsDesc'),
-      link: 'https://github.com/ghost-global-oficial/LLM_STUDIO/wiki'
-    }
+      docSections: [
+        { title: t('docSkillsTitle'), content: t('docSkillsContent'), tips: [t('docSkillsTip1'), t('docSkillsTip2'), t('docSkillsTip3'), t('docSkillsTip4')] },
+      ],
+    },
   ];
 
-  const DocCard = ({ title, icon, content, link }: any) => (
+  const DocCard = ({ title, icon, content, docSections }: any) => (
     <TouchableOpacity
       style={[styles.card, { backgroundColor: cardBg, borderColor: cardBorder }]}
-      onPress={() => Linking.openURL(link)}
+      onPress={() => navigation.navigate('DocDetail', { title, sections: docSections })}
       activeOpacity={0.7}
     >
       <View style={styles.cardHeader}>
