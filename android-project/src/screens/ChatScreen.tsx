@@ -3,12 +3,13 @@ import {
   StyleSheet, Text, View, TextInput, TouchableOpacity, ScrollView,
   KeyboardAvoidingView, Platform, ActivityIndicator, Alert, NativeModules
 } from 'react-native';
-import { ArrowLeft, Bot, ArrowUp, Paperclip, Mic } from 'lucide-react-native';
+import { ArrowLeft, Bot, ArrowUp, Paperclip, Mic, Zap } from 'lucide-react-native';
 import { initLlama, LlamaContext } from 'llama.rn';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../App';
 import { useTheme } from '../context/ThemeContext';
 import { useSettings, useTranslation } from '../context/SettingsContext';
+import { useSkills } from '../context/SkillsContext';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Chat'>;
 
@@ -16,12 +17,39 @@ interface Message {
   id: string;
   text: string;
   isUser: boolean;
+  isToolCall?: boolean;
+  isToolResult?: boolean;
+  toolName?: string;
+}
+
+const TOOL_CALL_REGEX = /\[TOOL_CALL:\s*(\w+)\(([^)]*)\)\]/;
+
+function parseToolCall(text: string): { skillName: string; args: Record<string, any> } | null {
+  const match = text.match(TOOL_CALL_REGEX);
+  if (!match) return null;
+
+  const skillName = match[1];
+  const argsStr = match[2];
+  const args: Record<string, any> = {};
+
+  const argRegex = /(\w+)\s*=\s*(?:"([^"]*)"|(\d+(?:\.\d+)?)|(\w+))/g;
+  let argMatch;
+  while ((argMatch = argRegex.exec(argsStr)) !== null) {
+    if (argMatch[2] !== undefined) args[argMatch[1]] = argMatch[2];
+    else if (argMatch[3] !== undefined) args[argMatch[1]] = parseFloat(argMatch[3]);
+    else if (argMatch[4] === 'true') args[argMatch[1]] = true;
+    else if (argMatch[4] === 'false') args[argMatch[1]] = false;
+    else args[argMatch[1]] = argMatch[4];
+  }
+
+  return { skillName, args };
 }
 
 export default function ChatScreen({ route, navigation }: Props) {
   const { isDark } = useTheme();
   const { systemPrompt, performanceMode } = useSettings();
   const { t } = useTranslation();
+  const { skills, executeSkill, getSystemPromptWithTools } = useSkills();
   const { fileUri, fileName } = route.params;
   const [modelReady, setModelReady] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -41,10 +69,8 @@ export default function ChatScreen({ route, navigation }: Props) {
           await llamaContext.current.release();
         }
 
-        // No Android o C++ precisa do caminho absoluto limpo em vez da URI do Expo
         const absolutePath = fileUri.replace('file://', '');
 
-        // Get performance settings from native module
         let perfSettings = { n_threads: 4, n_ctx: 1024, n_gpu_layers: 0, use_mlock: false };
         try {
           const DeviceModule = NativeModules.DeviceModule;
@@ -96,22 +122,65 @@ export default function ChatScreen({ route, navigation }: Props) {
     };
   }, [fileUri]);
 
+  const runCompletion = async (prompt: string): Promise<string> => {
+    if (!llamaContext.current) throw new Error('Model not loaded');
+
+    let fullResponse = '';
+    let hasStarted = false;
+
+    const inferenceParams: Record<string, any> = {
+      prompt,
+      stop: ["<|end|>", "<|", "User:", "Assistant:"],
+    };
+
+    switch (performanceMode) {
+      case 'performance':
+        inferenceParams.n_predict = 1024;
+        inferenceParams.temperature = 0.8;
+        inferenceParams.top_p = 0.95;
+        inferenceParams.repeat_penalty = 1.1;
+        break;
+      case 'balanced':
+        inferenceParams.n_predict = 512;
+        inferenceParams.temperature = 0.7;
+        inferenceParams.top_p = 0.9;
+        inferenceParams.repeat_penalty = 1.15;
+        break;
+      case 'efficiency':
+        inferenceParams.n_predict = 256;
+        inferenceParams.temperature = 0.5;
+        inferenceParams.top_p = 0.85;
+        inferenceParams.repeat_penalty = 1.2;
+        break;
+      default:
+        inferenceParams.n_predict = 512;
+        inferenceParams.temperature = 0.7;
+        inferenceParams.top_p = 0.9;
+        inferenceParams.repeat_penalty = 1.15;
+    }
+
+    await llamaContext.current.completion(inferenceParams, (data: any) => {
+      if (!data) return;
+      let tokenText = '';
+      if (typeof data === 'string') {
+        tokenText = data;
+      } else {
+        tokenText = data.token || data.text || data.content || data.choices?.[0]?.delta?.content || '';
+      }
+      if (tokenText) fullResponse += tokenText;
+    });
+
+    return fullResponse;
+  };
+
   const sendMessage = async () => {
-    console.log('Botão Enviar pressionado com texto:', inputText);
-
-    if (!inputText.trim()) {
-       return Alert.alert('Aviso', 'Escreva algo antes de enviar!');
-    }
-
-    if (!llamaContext.current) {
-       return Alert.alert(t('error'), 'Model not loaded');
-    }
+    if (!inputText.trim()) return Alert.alert('Aviso', 'Escreva algo antes de enviar!');
+    if (!llamaContext.current) return Alert.alert(t('error'), 'Model not loaded');
 
     const userMsg: Message = { id: Date.now().toString(), text: inputText, isUser: true };
     const aiMsgId = (Date.now() + 1).toString();
     const aiMsg: Message = { id: aiMsgId, text: '', isUser: false };
 
-    // Adiciona User e Placeholder IA de uma só vez para evitar bugs de render
     setMessages(prev => [...prev, userMsg, aiMsg]);
 
     const promptToSend = inputText;
@@ -119,83 +188,95 @@ export default function ChatScreen({ route, navigation }: Props) {
     setLoading(true);
 
     try {
-      // Build conversation context using current messages state
       const currentMessages = messages;
-      let fullContext = `<|system|>\n${systemPrompt} <|end|>\n`;
+      const toolsPrompt = getSystemPromptWithTools();
+      let fullContext = `<|system|>\n${systemPrompt}`;
+      if (toolsPrompt) fullContext += `\n\n${toolsPrompt}`;
+      fullContext += ` <|end|>\n`;
+
       currentMessages.forEach(msg => {
-        if (msg.id !== '1' && msg.text !== '') {
-           fullContext += msg.isUser ? `<|user|>\n${msg.text} <|end|>\n` : `<|assistant|>\n${msg.text} <|end|>\n`;
+        if (msg.id !== '1' && msg.text !== '' && !msg.isToolCall && !msg.isToolResult) {
+          fullContext += msg.isUser ? `<|user|>\n${msg.text} <|end|>\n` : `<|assistant|>\n${msg.text} <|end|>\n`;
         }
       });
       fullContext += `<|user|>\n${promptToSend} <|end|>\n<|assistant|>\n`;
 
-      console.log('--- PROMPT ENVIADO ---');
+      let response = await runCompletion(fullContext);
 
-      let hasStarted = false;
+      const toolCall = parseToolCall(response);
 
-      // Adjust inference parameters based on performance mode
-      const inferenceParams: Record<string, any> = {
-        prompt: fullContext,
-        stop: [" <|end|>", "<|", "User:", "Assistant:"]
-      };
+      if (toolCall) {
+        const skill = skills.find(s => s.name === toolCall.skillName && s.enabled);
 
-      switch (performanceMode) {
-        case 'performance':
-          inferenceParams.n_predict = 1024;
-          inferenceParams.temperature = 0.8;
-          inferenceParams.top_p = 0.95;
-          inferenceParams.repeat_penalty = 1.1;
-          break;
-        case 'balanced':
-          inferenceParams.n_predict = 512;
-          inferenceParams.temperature = 0.7;
-          inferenceParams.top_p = 0.9;
-          inferenceParams.repeat_penalty = 1.15;
-          break;
-        case 'efficiency':
-          inferenceParams.n_predict = 256;
-          inferenceParams.temperature = 0.5;
-          inferenceParams.top_p = 0.85;
-          inferenceParams.repeat_penalty = 1.2;
-          break;
-        default:
-          inferenceParams.n_predict = 512;
-          inferenceParams.temperature = 0.7;
-          inferenceParams.top_p = 0.9;
-          inferenceParams.repeat_penalty = 1.15;
-      }
-
-      const response = await llamaContext.current.completion(inferenceParams, (data: any) => {
-        if (!data) return;
-
-        // Tenta capturar o texto de diversas propriedades comuns em diferentes versões da lib
-        let tokenText = "";
-        if (typeof data === 'string') {
-          tokenText = data;
-        } else {
-          tokenText = data.token || data.text || data.content || data.choices?.[0]?.delta?.content || "";
-        }
-
-        if (!hasStarted && tokenText.trim() !== "") {
-          setLoading(false);
-          hasStarted = true;
-        }
-
-        if (tokenText) {
+        if (skill) {
           setMessages(prev => prev.map(m =>
-            m.id === aiMsgId ? { ...m, text: m.text + tokenText } : m
+            m.id === aiMsgId ? { ...m, text: response } : m
+          ));
+
+          const toolCallMsg: Message = {
+            id: `tc_${Date.now()}`,
+            text: `${t('callingTool')}: ${skill.name}(${JSON.stringify(toolCall.args)})`,
+            isUser: false,
+            isToolCall: true,
+            toolName: skill.name,
+          };
+          setMessages(prev => [...prev, toolCallMsg]);
+
+          try {
+            const result = await executeSkill(skill, toolCall.args);
+            const resultStr = typeof result === 'string' ? result : JSON.stringify(result, null, 2);
+
+            const resultMsg: Message = {
+              id: `tr_${Date.now()}`,
+              text: `${t('toolResult')}: ${resultStr}`,
+              isUser: false,
+              isToolResult: true,
+              toolName: skill.name,
+            };
+            setMessages(prev => [...prev, resultMsg]);
+
+            let followUpContext = `<|system|>\n${systemPrompt}`;
+            if (toolsPrompt) followUpContext += `\n\n${toolsPrompt}`;
+            followUpContext += ` <|end|>\n`;
+
+            currentMessages.forEach(msg => {
+              if (msg.id !== '1' && msg.text !== '' && !msg.isToolCall && !msg.isToolResult) {
+                followUpContext += msg.isUser ? `<|user|>\n${msg.text} <|end|>\n` : `<|assistant|>\n${msg.text} <|end|>\n`;
+              }
+            });
+            followUpContext += `<|user|>\n${promptToSend} <|end|>\n<|assistant|>\n${response}\n<|tool_result|>\n${resultStr} <|end|>\n<|assistant|>\n`;
+
+            const followUpResponse = await runCompletion(followUpContext);
+
+            const finalMsg: Message = {
+              id: `fr_${Date.now()}`,
+              text: followUpResponse || t('noResponse'),
+              isUser: false,
+            };
+            setMessages(prev => [...prev, finalMsg]);
+          } catch (toolError: any) {
+            const errorMsg: Message = {
+              id: `te_${Date.now()}`,
+              text: `${t('toolError')}: ${toolError.message}`,
+              isUser: false,
+              isToolResult: true,
+              toolName: skill.name,
+            };
+            setMessages(prev => [...prev, errorMsg]);
+          }
+        } else {
+          setMessages(prev => prev.map(m =>
+            m.id === aiMsgId ? { ...m, text: response } : m
           ));
         }
-      });
-
-      // Fallback final: se o stream falhou mas o response final tem texto
-      setMessages(prev => prev.map(m => {
-        if (m.id === aiMsgId && m.text === "") {
-          const finalResult = response?.text || response?.content || "";
-          return { ...m, text: finalResult || t('noResponse') };
-        }
-        return m;
-      }));
+      } else {
+        setMessages(prev => prev.map(m => {
+          if (m.id === aiMsgId && m.text === '') {
+            return { ...m, text: response || t('noResponse') };
+          }
+          return m;
+        }));
+      }
     } catch (error: any) {
       console.error('Inference crash:', error);
       Alert.alert(t('error'), t('inferenceError') + ': ' + (error.message || 'Unknown'));
@@ -218,9 +299,10 @@ export default function ChatScreen({ route, navigation }: Props) {
   const bubbleBg = isDark ? '#1E1E1E' : '#FFFFFF';
   const bubbleBorder = isDark ? '#333' : '#DDD';
 
+  const enabledCount = skills.filter(s => s.enabled).length;
+
   return (
     <KeyboardAvoidingView style={[styles.container, { backgroundColor: bgColor }]} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      {/* Header Modal com Botao de Voltar */}
       <View style={[styles.header, { backgroundColor: headerBg, borderBottomColor: headerBorder }]}>
         <TouchableOpacity style={[styles.backBtn, { backgroundColor: isDark ? '#1E1E1E' : '#E0E0E0' }]} onPress={() => navigation.goBack()}>
           <ArrowLeft size={24} color={textColor} />
@@ -230,6 +312,12 @@ export default function ChatScreen({ route, navigation }: Props) {
           <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 2 }}>
             {!modelReady && <ActivityIndicator size="small" color="#007AFF" style={{ marginRight: 6 }} />}
             <Text style={[styles.headerSubtitle, { color: secondaryText }]}>{modelReady ? t('online') : t('loadModel')}</Text>
+            {enabledCount > 0 && (
+              <View style={[styles.toolsBadge, { backgroundColor: '#007AFF20' }]}>
+                <Zap size={10} color="#007AFF" />
+                <Text style={styles.toolsBadgeText}>{enabledCount} tools</Text>
+              </View>
+            )}
           </View>
         </View>
         <View style={{ width: 40 }} />
@@ -241,20 +329,40 @@ export default function ChatScreen({ route, navigation }: Props) {
         ref={scrollViewRef}
         onContentSizeChange={() => scrollViewRef.current?.scrollToEnd({ animated: true })}
       >
-        {messages.map((msg) => (
-          <View key={msg.id} style={[styles.messageWrapper, msg.isUser ? styles.messageWrapperUser : styles.messageWrapperAI]}>
-            {!msg.isUser && (
-              <View style={[styles.avatarAI, { backgroundColor: avatarBg, borderColor: bubbleBorder }]}>
-                <Bot size={16} color={textColor} strokeWidth={2.5} />
+        {messages.map((msg) => {
+          if (msg.isToolCall) {
+            return (
+              <View key={msg.id} style={styles.toolCallContainer}>
+                <View style={[styles.toolCallBadge, { backgroundColor: '#FF950020', borderColor: '#FF950040' }]}>
+                  <Zap size={14} color="#FF9500" />
+                  <Text style={[styles.toolCallText, { color: '#FF9500' }]}>{msg.text}</Text>
+                </View>
               </View>
-            )}
-            <View style={[styles.messageBubble, msg.isUser ? styles.userMessage : styles.aiMessage, { backgroundColor: bubbleBg, borderColor: bubbleBorder }]}>
-              <Text style={[styles.messageText, { color: textColor }]}>
-                {msg.text}
-              </Text>
+            );
+          }
+          if (msg.isToolResult) {
+            return (
+              <View key={msg.id} style={styles.toolResultContainer}>
+                <View style={[styles.toolResultBadge, { backgroundColor: '#34C75920', borderColor: '#34C75940' }]}>
+                  <Text style={[styles.toolResultLabel, { color: '#34C759' }]}>{t('toolResult')}</Text>
+                  <Text style={[styles.toolResultText, { color: secondaryText }]} numberOfLines={6}>{msg.text}</Text>
+                </View>
+              </View>
+            );
+          }
+          return (
+            <View key={msg.id} style={[styles.messageWrapper, msg.isUser ? styles.messageWrapperUser : styles.messageWrapperAI]}>
+              {!msg.isUser && (
+                <View style={[styles.avatarAI, { backgroundColor: avatarBg, borderColor: bubbleBorder }]}>
+                  <Bot size={16} color={textColor} strokeWidth={2.5} />
+                </View>
+              )}
+              <View style={[styles.messageBubble, msg.isUser ? styles.userMessage : styles.aiMessage, { backgroundColor: bubbleBg, borderColor: bubbleBorder }]}>
+                <Text style={[styles.messageText, { color: textColor }]}>{msg.text}</Text>
+              </View>
             </View>
-          </View>
-        ))}
+          );
+        })}
         {loading && modelReady && (
           <View style={[styles.messageWrapper, styles.messageWrapperAI]}>
             <View style={[styles.avatarAI, { backgroundColor: avatarBg, borderColor: bubbleBorder }]}>
@@ -262,15 +370,12 @@ export default function ChatScreen({ route, navigation }: Props) {
             </View>
             <View style={[styles.messageBubble, styles.aiMessage, { backgroundColor: bubbleBg, borderColor: bubbleBorder, flexDirection: 'row', alignItems: 'center' }]}>
                <ActivityIndicator size="small" color={secondaryText} style={{ marginRight: 8 }} />
-               <Text style={[styles.messageText, { color: secondaryText, fontStyle: 'italic' }]}>
-                  {t('processing')}
-               </Text>
+               <Text style={[styles.messageText, { color: secondaryText, fontStyle: 'italic' }]}>{t('processing')}</Text>
             </View>
           </View>
         )}
       </ScrollView>
 
-      {/* Input */}
       <View style={[styles.inputArea, { backgroundColor: inputAreaBg }]}>
         <View style={[styles.inputContainer, { backgroundColor: inputBg, borderColor: inputBorder }]}>
           <TouchableOpacity style={styles.attachButton} onPress={() => Alert.alert('Arquivos', 'Seletor de arquivos em breve.')}>
@@ -315,6 +420,8 @@ const styles = StyleSheet.create({
   headerTitleContainer: { flex: 1, alignItems: 'center', marginHorizontal: 10 },
   headerTitle: { fontSize: 16, fontWeight: '600' },
   headerSubtitle: { fontSize: 12, marginTop: 2 },
+  toolsBadge: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 10, marginLeft: 8 },
+  toolsBadgeText: { fontSize: 10, color: '#007AFF', fontWeight: '600', marginLeft: 4 },
   chatArea: { flex: 1, paddingHorizontal: 16 },
   chatContent: { paddingVertical: 20 },
   messageWrapper: { flexDirection: 'row', marginBottom: 24, width: '100%' },
@@ -325,6 +432,13 @@ const styles = StyleSheet.create({
   userMessage: { borderRadius: 20, borderBottomRightRadius: 4, borderWidth: 1 },
   aiMessage: { borderRadius: 20, borderBottomLeftRadius: 4, borderWidth: 1 },
   messageText: { fontSize: 16, lineHeight: 24 },
+  toolCallContainer: { marginBottom: 8, paddingLeft: 38 },
+  toolCallBadge: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 12, borderWidth: 1 },
+  toolCallText: { fontSize: 12, marginLeft: 6, flex: 1, fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace' },
+  toolResultContainer: { marginBottom: 12, paddingLeft: 38 },
+  toolResultBadge: { paddingHorizontal: 12, paddingVertical: 10, borderRadius: 12, borderWidth: 1 },
+  toolResultLabel: { fontSize: 10, fontWeight: '700', textTransform: 'uppercase', marginBottom: 4 },
+  toolResultText: { fontSize: 13, lineHeight: 18, fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace' },
   inputArea: { paddingHorizontal: 16, paddingVertical: 12, paddingBottom: Platform.OS === 'ios' ? 24 : 16 },
   inputContainer: { flexDirection: 'row', alignItems: 'center', borderRadius: 24, paddingLeft: 16, paddingRight: 6, paddingVertical: 6, borderWidth: 1 },
   textInput: { flex: 1, fontSize: 16, maxHeight: 120, minHeight: 34, paddingTop: 6, paddingBottom: 6, paddingHorizontal: 8 },

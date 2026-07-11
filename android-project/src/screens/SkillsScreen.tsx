@@ -1,109 +1,16 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Switch, Alert, Modal } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Switch, Alert, Modal, Platform } from 'react-native';
 import { Zap, Plus, Trash2, X, Code, Globe, Calculator, FileText, Terminal, Wrench } from 'lucide-react-native';
 import { useTheme } from '../context/ThemeContext';
 import { useTranslation } from '../context/SettingsContext';
-import RNFS from 'react-native-fs';
-
-const SKILLS_FILE = `${RNFS.DocumentDirectoryPath}skills_config.json`;
-
-interface SkillParameter {
-  name: string;
-  type: 'string' | 'number' | 'boolean';
-  description: string;
-  required: boolean;
-}
-
-interface Skill {
-  id: string;
-  name: string;
-  description: string;
-  enabled: boolean;
-  parameters: SkillParameter[];
-  handlerCode: string;
-  icon: string;
-}
-
-const BUILTIN_SKILLS: Omit<Skill, 'id'>[] = [
-  {
-    name: 'web_search',
-    description: 'Pesquisa na web usando DuckDuckGo',
-    enabled: true,
-    icon: 'Globe',
-    parameters: [
-      { name: 'query', type: 'string', description: 'Termo de pesquisa', required: true },
-    ],
-    handlerCode: `// Web search via DuckDuckGo Lite
-const url = 'https://lite.duckduckgo.com/lite/?q=' + encodeURIComponent(params.query);
-const resp = await fetch(url);
-const html = await resp.text();
-return { result: html.substring(0, 2000), query: params.query };`,
-  },
-  {
-    name: 'calculate',
-    description: 'Calculadora segura para expressões matemáticas',
-    enabled: true,
-    icon: 'Calculator',
-    parameters: [
-      { name: 'expression', type: 'string', description: 'Expressão matemática (ex: 2+2*3)', required: true },
-    ],
-    handlerCode: `// Safe math evaluator
-const expr = params.expression.replace(/[^0-9+\-*/().]/g, '');
-if (!expr) throw new Error('Invalid expression');
-const result = Function('"use strict"; return (' + expr + ')')();
-return { expression: params.expression, result };`,
-  },
-  {
-    name: 'read_file',
-    description: 'Lê o conteúdo de um arquivo local',
-    enabled: true,
-    icon: 'FileText',
-    parameters: [
-      { name: 'path', type: 'string', description: 'Caminho do arquivo', required: true },
-    ],
-    handlerCode: `const RNFS = require('react-native-fs');
-const path = params.path.startsWith('/') ? params.path : RNFS.DocumentDirectoryPath + '/' + params.path;
-const exists = await RNFS.exists(path);
-if (!exists) throw new Error('File not found: ' + params.path);
-const content = await RNFS.readFile(path, 'utf8');
-return { path: params.path, content: content.substring(0, 5000), size: content.length };`,
-  },
-  {
-    name: 'write_file',
-    description: 'Escreve conteúdo em um arquivo local',
-    enabled: true,
-    icon: 'FileText',
-    parameters: [
-      { name: 'path', type: 'string', description: 'Caminho do arquivo', required: true },
-      { name: 'content', type: 'string', description: 'Conteúdo a escrever', required: true },
-    ],
-    handlerCode: `const RNFS = require('react-native-fs');
-const path = params.path.startsWith('/') ? params.path : RNFS.DocumentDirectoryPath + '/' + params.path;
-await RNFS.writeFile(path, params.content, 'utf8');
-return { path: params.path, written: params.content.length + ' bytes' };`,
-  },
-  {
-    name: 'list_files',
-    description: 'Lista arquivos em um diretório',
-    enabled: true,
-    icon: 'FileText',
-    parameters: [
-      { name: 'path', type: 'string', description: 'Diretório (vazio = raiz do app)', required: false },
-    ],
-    handlerCode: `const RNFS = require('react-native-fs');
-const dir = params.path ? (params.path.startsWith('/') ? params.path : RNFS.DocumentDirectoryPath + '/' + params.path) : RNFS.DocumentDirectoryPath;
-const items = await RNFS.readDir(dir);
-const result = items.map(i => ({ name: i.name, isFile: i.isFile(), size: i.size }));
-return { directory: dir, items: result };`,
-  },
-];
+import { useSkills, Skill, SkillParameter } from '../context/SkillsContext';
 
 const ICON_MAP: Record<string, any> = { Globe, Calculator, FileText, Terminal, Wrench, Code };
 
 export default function SkillsScreen() {
   const { isDark } = useTheme();
   const { t } = useTranslation();
-  const [skills, setSkills] = useState<Skill[]>([]);
+  const { skills, toggleSkill, deleteSkill, saveSkill, updateSkill } = useSkills();
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [editingSkill, setEditingSkill] = useState<Skill | null>(null);
   const [name, setName] = useState('');
@@ -121,44 +28,6 @@ export default function SkillsScreen() {
   const secondaryText = isDark ? '#888' : '#666';
   const borderColor = isDark ? '#333' : '#E0E0E0';
   const inputBg = isDark ? '#1E1E1E' : '#F0F0F0';
-
-  useEffect(() => { loadSkills(); }, []);
-
-  const loadSkills = async () => {
-    try {
-      const exists = await RNFS.exists(SKILLS_FILE);
-      if (exists) {
-        const raw = await RNFS.readFile(SKILLS_FILE, 'utf8');
-        setSkills(JSON.parse(raw));
-      } else {
-        const defaults = BUILTIN_SKILLS.map((s, i) => ({ ...s, id: `builtin_${i}` }));
-        setSkills(defaults);
-        await RNFS.writeFile(SKILLS_FILE, JSON.stringify(defaults), 'utf8');
-      }
-    } catch {
-      const defaults = BUILTIN_SKILLS.map((s, i) => ({ ...s, id: `builtin_${i}` }));
-      setSkills(defaults);
-    }
-  };
-
-  const saveSkills = async (updated: Skill[]) => {
-    setSkills(updated);
-    await RNFS.writeFile(SKILLS_FILE, JSON.stringify(updated), 'utf8');
-  };
-
-  const toggleSkill = async (id: string) => {
-    const updated = skills.map(s => s.id === id ? { ...s, enabled: !s.enabled } : s);
-    await saveSkills(updated);
-  };
-
-  const deleteSkill = async (id: string) => {
-    Alert.alert(t('remove'), "Are you sure?", [
-      { text: t('cancel') },
-      { text: t('remove'), style: "destructive", onPress: async () => {
-        await saveSkills(skills.filter(s => s.id !== id));
-      }}
-    ]);
-  };
 
   const openNewSkill = () => {
     setEditingSkill(null);
@@ -189,7 +58,7 @@ export default function SkillsScreen() {
     setParams(prev => prev.filter((_, i) => i !== index));
   };
 
-  const saveSkill = async () => {
+  const handleSaveSkill = async () => {
     if (!name.trim()) return Alert.alert(t('error'), t('nameRequired'));
     if (!handlerCode.trim()) return Alert.alert(t('error'), t('codeRequired'));
 
@@ -197,10 +66,15 @@ export default function SkillsScreen() {
     const randomIcon = iconNames[Math.floor(Math.random() * iconNames.length)];
 
     if (editingSkill) {
-      const updated = skills.map(s => s.id === editingSkill.id ? { ...s, name: name.trim(), description: description.trim(), handlerCode, parameters: params } : s);
-      await saveSkills(updated);
+      await updateSkill({
+        ...editingSkill,
+        name: name.trim(),
+        description: description.trim(),
+        handlerCode,
+        parameters: params,
+      });
     } else {
-      const newSkill: Skill = {
+      await saveSkill({
         id: `custom_${Date.now()}`,
         name: name.trim(),
         description: description.trim(),
@@ -208,40 +82,19 @@ export default function SkillsScreen() {
         icon: randomIcon,
         parameters: params,
         handlerCode,
-      };
-      await saveSkills([...skills, newSkill]);
+      });
     }
     setIsModalVisible(false);
   };
 
-  const executeSkill = useCallback(async (skill: Skill, args: Record<string, any>): Promise<any> => {
-    try {
-      const fn = new Function('params', skill.handlerCode);
-      return await fn(args);
-    } catch (e: any) {
-      throw new Error(`Skill "${skill.name}" error: ${e.message}`);
-    }
-  }, []);
-
-  const getToolsForLLM = useCallback((): any[] => {
-    return skills.filter(s => s.enabled).map(s => ({
-      type: 'function',
-      function: {
-        name: s.name,
-        description: s.description,
-        parameters: {
-          type: 'object',
-          properties: Object.fromEntries(s.parameters.map(p => [p.name, { type: p.type, description: p.description }])),
-          required: s.parameters.filter(p => p.required).map(p => p.name),
-        },
-      },
-    }));
-  }, [skills]);
-
-  const getIcon = (iconName: string) => {
-    const Icon = ICON_MAP[iconName] || Zap;
-    return Icon;
+  const handleDeleteSkill = (id: string) => {
+    Alert.alert(t('remove'), 'Are you sure?', [
+      { text: t('cancel') },
+      { text: t('remove'), style: 'destructive', onPress: () => deleteSkill(id) },
+    ]);
   };
+
+  const getIcon = (iconName: string) => ICON_MAP[iconName] || Zap;
 
   return (
     <View style={[styles.container, { backgroundColor: bgColor }]}>
@@ -272,7 +125,7 @@ export default function SkillsScreen() {
                   <Text style={[styles.skillName, { color: textColor }]}>{skill.name}</Text>
                   <Text style={[styles.skillDesc, { color: secondaryText }]} numberOfLines={2}>{skill.description}</Text>
                   <Text style={[styles.skillParams, { color: isDark ? '#555' : '#999' }]}>
-                    {skill.parameters.length} param(s) · {skill.handlerCode.split('\n').length} linhas
+                    {skill.parameters.length} param(s) · {skill.handlerCode.split('\n').length} lines
                   </Text>
                 </View>
                 <Switch value={skill.enabled} onValueChange={() => toggleSkill(skill.id)} trackColor={{ false: '#333', true: '#007AFF' }} />
@@ -281,7 +134,7 @@ export default function SkillsScreen() {
                 <TouchableOpacity onPress={() => openEditSkill(skill)} style={[styles.actionBtn, { borderColor }]}>
                   <Text style={[styles.actionText, { color: '#007AFF' }]}>{t('edit')}</Text>
                 </TouchableOpacity>
-                <TouchableOpacity onPress={() => deleteSkill(skill.id)} style={[styles.actionBtn, { borderColor }]}>
+                <TouchableOpacity onPress={() => handleDeleteSkill(skill.id)} style={[styles.actionBtn, { borderColor }]}>
                   <Text style={[styles.actionText, { color: '#F44336' }]}>{t('remove')}</Text>
                 </TouchableOpacity>
               </View>
@@ -334,7 +187,7 @@ export default function SkillsScreen() {
               <Text style={[styles.label, { color: secondaryText }]}>{t('code')}</Text>
               <TextInput style={[styles.codeInput, { backgroundColor: inputBg, color: '#00FF00', borderColor }]} value={handlerCode} onChangeText={setHandlerCode} multiline autoCapitalize="none" placeholder={t('codePlaceholder')} placeholderTextColor="#333" />
 
-              <TouchableOpacity style={styles.saveButton} onPress={saveSkill}>
+              <TouchableOpacity style={styles.saveButton} onPress={handleSaveSkill}>
                 <Text style={styles.saveButtonText}>{editingSkill ? t('save') : t('createSkill')}</Text>
               </TouchableOpacity>
               <View style={{ height: 30 }} />

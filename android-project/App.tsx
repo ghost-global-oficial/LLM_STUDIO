@@ -8,6 +8,7 @@ import { FolderOpen, MessageCircle, Server, Zap, FileText, Settings } from 'luci
 import { ThemeProvider, useTheme } from './src/context/ThemeContext';
 import { DownloadProvider } from './src/context/DownloadContext';
 import { SettingsProvider, useSettings } from './src/context/SettingsContext';
+import { SkillsProvider } from './src/context/SkillsContext';
 import ModelsScreen from './src/screens/ModelsScreen';
 import ChatScreen from './src/screens/ChatScreen';
 import ServerScreen from './src/screens/ServerScreen';
@@ -184,9 +185,11 @@ export default function App() {
   return (
     <ThemeProvider>
       <SettingsProvider>
-        <DownloadProvider>
-          <AppNavigator />
-        </DownloadProvider>
+        <SkillsProvider>
+          <DownloadProvider>
+            <AppNavigator />
+          </DownloadProvider>
+        </SkillsProvider>
       </SettingsProvider>
     </ThemeProvider>
   );
