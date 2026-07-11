@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, Text, View, TouchableOpacity, ScrollView, Alert } from 'react-native';
-import { ArrowLeft, Clock, Trash2, MessageCircle } from 'lucide-react-native';
+import { StyleSheet, Text, View, TouchableOpacity, ScrollView, Alert, TextInput } from 'react-native';
+import { ArrowLeft, Clock, Trash2, MessageCircle, Search, Folder } from 'lucide-react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../App';
 import { useTheme } from '../context/ThemeContext';
@@ -8,6 +8,7 @@ import { useTranslation } from '../context/SettingsContext';
 import RNFS from 'react-native-fs';
 
 const HISTORY_DIR = `${RNFS.DocumentDirectoryPath}/chat_history`;
+const PROJECTS_DIR = `${RNFS.DocumentDirectoryPath}/projects`;
 
 interface ChatHistoryItem {
   id: string;
@@ -22,12 +23,15 @@ export default function ChatHistoryScreen({ navigation }: Props) {
   const { isDark } = useTheme();
   const { t } = useTranslation();
   const [history, setHistory] = useState<ChatHistoryItem[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showSearch, setShowSearch] = useState(false);
 
   const bgColor = isDark ? '#0F0F0F' : '#F5F5F5';
   const textColor = isDark ? '#FFF' : '#000';
   const secondaryText = isDark ? '#888' : '#666';
   const cardBg = isDark ? '#1A1A1A' : '#FFFFFF';
   const borderColor = isDark ? '#333' : '#E0E0E0';
+  const inputBg = isDark ? '#1E1E1E' : '#F0F0F0';
 
   useEffect(() => { loadHistory(); }, []);
 
@@ -76,6 +80,13 @@ export default function ChatHistoryScreen({ navigation }: Props) {
     return `${d.getDate().toString().padStart(2, '0')}/${(d.getMonth() + 1).toString().padStart(2, '0')} ${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`;
   };
 
+  const filtered = searchQuery.trim()
+    ? history.filter(h =>
+        h.fileName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        h.messages.some(m => m.text.toLowerCase().includes(searchQuery.toLowerCase()))
+      )
+    : history;
+
   return (
     <View style={[styles.container, { backgroundColor: bgColor }]}>
       <View style={[styles.header, { backgroundColor: bgColor, borderBottomColor: borderColor }]}>
@@ -83,17 +94,51 @@ export default function ChatHistoryScreen({ navigation }: Props) {
           <ArrowLeft size={24} color={textColor} />
         </TouchableOpacity>
         <Text style={[styles.headerTitle, { color: textColor }]}>{t('chatHistory')}</Text>
-        <View style={{ width: 40 }} />
+        <TouchableOpacity style={[styles.backBtn, { backgroundColor: isDark ? '#1E1E1E' : '#E0E0E0' }]} onPress={() => setShowSearch(!showSearch)}>
+          <Search size={20} color={textColor} />
+        </TouchableOpacity>
       </View>
 
+      {showSearch && (
+        <View style={[styles.searchContainer, { backgroundColor: inputBg, borderBottomColor: borderColor }]}>
+          <Search size={18} color={secondaryText} />
+          <TextInput
+            style={[styles.searchInput, { color: textColor }]}
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            placeholder={t('searchHistory')}
+            placeholderTextColor={secondaryText}
+            autoFocus
+          />
+          {searchQuery.length > 0 && (
+            <TouchableOpacity onPress={() => setSearchQuery('')}>
+              <Text style={{ color: secondaryText, fontSize: 16 }}>✕</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      )}
+
       <ScrollView contentContainerStyle={styles.content}>
-        {history.length === 0 ? (
+        <TouchableOpacity
+          style={[styles.topBtn, { backgroundColor: cardBg, borderColor }]}
+          onPress={() => navigation.navigate('Chat', { fileUri: '', fileName: t('projects'), loadHistory: null })}
+          activeOpacity={0.7}
+        >
+          <View style={[styles.topBtnIcon, { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)' }]}>
+            <Folder size={20} color={isDark ? '#FFF' : '#333'} />
+          </View>
+          <Text style={[styles.topBtnText, { color: textColor }]}>{t('projects')}</Text>
+        </TouchableOpacity>
+
+        {filtered.length === 0 ? (
           <View style={styles.emptyContainer}>
             <Clock size={48} color={secondaryText} />
-            <Text style={[styles.emptyText, { color: secondaryText }]}>{t('noHistory')}</Text>
+            <Text style={[styles.emptyText, { color: secondaryText }]}>
+              {searchQuery ? t('noResults') : t('noHistory')}
+            </Text>
           </View>
         ) : (
-          history.map(item => {
+          filtered.map(item => {
             const userMsgs = item.messages.filter(m => m.isUser);
             const lastMsg = item.messages.filter(m => !m.isUser).slice(-1)[0];
             return (
@@ -104,7 +149,7 @@ export default function ChatHistoryScreen({ navigation }: Props) {
                 activeOpacity={0.7}
               >
                 <View style={styles.cardHeader}>
-                  <View style={[styles.cardIcon, { backgroundColor: isDark ? '#FFF15' : 'rgba(0,0,0,0.06)' }]}>
+                  <View style={[styles.cardIcon, { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)' }]}>
                     <MessageCircle size={20} color={isDark ? '#FFF' : '#333'} />
                   </View>
                   <View style={styles.cardInfo}>
@@ -140,8 +185,13 @@ const styles = StyleSheet.create({
   },
   backBtn: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
   headerTitle: { flex: 1, fontSize: 18, fontWeight: '600', textAlign: 'center' },
+  searchContainer: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, gap: 10 },
+  searchInput: { flex: 1, fontSize: 16, padding: 0 },
   content: { padding: 16 },
-  emptyContainer: { alignItems: 'center', marginTop: 100 },
+  topBtn: { flexDirection: 'row', alignItems: 'center', padding: 16, borderRadius: 16, marginBottom: 16, borderWidth: 1 },
+  topBtnIcon: { width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center', marginRight: 12 },
+  topBtnText: { fontSize: 16, fontWeight: '600' },
+  emptyContainer: { alignItems: 'center', marginTop: 80 },
   emptyText: { fontSize: 16, marginTop: 16 },
   card: { borderRadius: 16, padding: 16, marginBottom: 12, borderWidth: 1 },
   cardHeader: { flexDirection: 'row', alignItems: 'center' },
