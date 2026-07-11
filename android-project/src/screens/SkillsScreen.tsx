@@ -104,7 +104,7 @@ export default function SkillsScreen() {
             <Text style={[styles.title, { color: textColor }]}>{t('skills')}</Text>
             <Text style={[styles.subtitle, { color: secondaryText }]}>{t('toolsFC')}</Text>
           </View>
-          <TouchableOpacity onPress={openNewSkill} style={styles.addButton}>
+          <TouchableOpacity onPress={openNewSkill} style={[styles.addButton, { backgroundColor: isDark ? '#FFF' : '#333' }]}>
             <Plus size={20} color="#FFF" />
           </TouchableOpacity>
         </View>
@@ -118,8 +118,8 @@ export default function SkillsScreen() {
           return (
             <View key={skill.id} style={[styles.skillCard, { backgroundColor: cardBg, borderColor }]}>
               <View style={styles.skillHeader}>
-                <View style={styles.skillIcon}>
-                  <Icon size={22} color={skill.enabled ? '#007AFF' : secondaryText} />
+                <View style={[styles.skillIcon, { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)' }]}>
+                  <Icon size={22} color={skill.enabled ? (isDark ? '#FFF' : '#333') : secondaryText} />
                 </View>
                 <View style={styles.skillInfo}>
                   <Text style={[styles.skillName, { color: textColor }]}>{skill.name}</Text>
@@ -128,11 +128,11 @@ export default function SkillsScreen() {
                     {skill.parameters.length} param(s) · {skill.handlerCode.split('\n').length} lines
                   </Text>
                 </View>
-                <Switch value={skill.enabled} onValueChange={() => toggleSkill(skill.id)} trackColor={{ false: '#333', true: '#007AFF' }} />
+                <Switch value={skill.enabled} onValueChange={() => toggleSkill(skill.id)} trackColor={{ false: '#333', true: isDark ? '#FFF' : '#333' }} />
               </View>
               <View style={styles.skillActions}>
                 <TouchableOpacity onPress={() => openEditSkill(skill)} style={[styles.actionBtn, { borderColor }]}>
-                  <Text style={[styles.actionText, { color: '#007AFF' }]}>{t('edit')}</Text>
+                  <Text style={[styles.actionText, { color: isDark ? '#FFF' : '#333' }]}>{t('edit')}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity onPress={() => handleDeleteSkill(skill.id)} style={[styles.actionBtn, { borderColor }]}>
                   <Text style={[styles.actionText, { color: '#F44336' }]}>{t('remove')}</Text>
@@ -170,24 +170,24 @@ export default function SkillsScreen() {
 
               <View style={[styles.paramAddRow, { borderColor }]}>
                 <TextInput style={[styles.paramInput, { backgroundColor: inputBg, color: textColor, borderColor }]} value={paramName} onChangeText={setParamName} placeholder={t('paramNamePlaceholder')} placeholderTextColor={isDark ? "#444" : "#999"} autoCapitalize="none" />
-                <TouchableOpacity style={[styles.typeBtn, { backgroundColor: paramType === 'string' ? '#007AFF' : inputBg, borderColor }]} onPress={() => setParamType('string')}>
-                  <Text style={{ color: paramType === 'string' ? '#FFF' : textColor, fontSize: 11 }}>str</Text>
+                <TouchableOpacity style={[styles.typeBtn, { backgroundColor: paramType === 'string' ? (isDark ? '#FFF' : '#333') : inputBg, borderColor }]} onPress={() => setParamType('string')}>
+                  <Text style={{ color: paramType === 'string' ? (isDark ? '#000' : '#FFF') : textColor, fontSize: 11 }}>str</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={[styles.typeBtn, { backgroundColor: paramType === 'number' ? '#007AFF' : inputBg, borderColor }]} onPress={() => setParamType('number')}>
-                  <Text style={{ color: paramType === 'number' ? '#FFF' : textColor, fontSize: 11 }}>num</Text>
+                <TouchableOpacity style={[styles.typeBtn, { backgroundColor: paramType === 'number' ? (isDark ? '#FFF' : '#333') : inputBg, borderColor }]} onPress={() => setParamType('number')}>
+                  <Text style={{ color: paramType === 'number' ? (isDark ? '#000' : '#FFF') : textColor, fontSize: 11 }}>num</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={[styles.typeBtn, { backgroundColor: paramType === 'boolean' ? '#007AFF' : inputBg, borderColor }]} onPress={() => setParamType('boolean')}>
-                  <Text style={{ color: paramType === 'boolean' ? '#FFF' : textColor, fontSize: 11 }}>bool</Text>
+                <TouchableOpacity style={[styles.typeBtn, { backgroundColor: paramType === 'boolean' ? (isDark ? '#FFF' : '#333') : inputBg, borderColor }]} onPress={() => setParamType('boolean')}>
+                  <Text style={{ color: paramType === 'boolean' ? (isDark ? '#000' : '#FFF') : textColor, fontSize: 11 }}>bool</Text>
                 </TouchableOpacity>
                 <Switch value={paramRequired} onValueChange={setParamRequired} style={{ transform: [{ scaleX: 0.6 }, { scaleY: 0.6 }], marginHorizontal: 4 }} />
-                <TouchableOpacity onPress={addParam}><Plus size={20} color="#007AFF" /></TouchableOpacity>
+                <TouchableOpacity onPress={addParam}><Plus size={20} color={isDark ? '#FFF' : '#333'} /></TouchableOpacity>
               </View>
               <Text style={[styles.hint, { color: secondaryText }]}>{t('required')} = toggle</Text>
 
               <Text style={[styles.label, { color: secondaryText }]}>{t('code')}</Text>
               <TextInput style={[styles.codeInput, { backgroundColor: inputBg, color: '#00FF00', borderColor }]} value={handlerCode} onChangeText={setHandlerCode} multiline autoCapitalize="none" placeholder={t('codePlaceholder')} placeholderTextColor="#333" />
 
-              <TouchableOpacity style={styles.saveButton} onPress={handleSaveSkill}>
+              <TouchableOpacity style={[styles.saveButton, { backgroundColor: isDark ? '#FFF' : '#333' }]} onPress={handleSaveSkill}>
                 <Text style={styles.saveButtonText}>{editingSkill ? t('save') : t('createSkill')}</Text>
               </TouchableOpacity>
               <View style={{ height: 30 }} />
@@ -205,11 +205,11 @@ const styles = StyleSheet.create({
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
   title: { fontSize: 28, fontWeight: 'bold' },
   subtitle: { fontSize: 14, marginTop: 2 },
-  addButton: { width: 44, height: 44, borderRadius: 22, backgroundColor: '#007AFF', alignItems: 'center', justifyContent: 'center' },
+  addButton: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
   sectionLabel: { fontSize: 13, marginBottom: 20 },
   skillCard: { borderRadius: 16, padding: 16, marginBottom: 12, borderWidth: 1 },
   skillHeader: { flexDirection: 'row', alignItems: 'center' },
-  skillIcon: { width: 44, height: 44, borderRadius: 12, backgroundColor: '#007AFF15', alignItems: 'center', justifyContent: 'center', marginRight: 12 },
+  skillIcon: { width: 44, height: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center', marginRight: 12 },
   skillInfo: { flex: 1, marginRight: 12 },
   skillName: { fontSize: 16, fontWeight: '600' },
   skillDesc: { fontSize: 13, marginTop: 2 },
@@ -230,6 +230,6 @@ const styles = StyleSheet.create({
   typeBtn: { paddingHorizontal: 8, paddingVertical: 6, borderRadius: 6, borderWidth: 1, marginHorizontal: 2, alignItems: 'center' },
   hint: { fontSize: 11, marginTop: 4, marginBottom: 4 },
   codeInput: { padding: 14, borderRadius: 12, fontSize: 13, borderWidth: 1, fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace', minHeight: 120, textAlignVertical: 'top' },
-  saveButton: { backgroundColor: '#007AFF', padding: 18, borderRadius: 15, alignItems: 'center', marginTop: 20 },
+  saveButton: { padding: 18, borderRadius: 15, alignItems: 'center', marginTop: 20 },
   saveButtonText: { color: '#FFF', fontSize: 16, fontWeight: 'bold' },
 });
