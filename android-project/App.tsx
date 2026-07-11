@@ -15,6 +15,7 @@ import ServerScreen from './src/screens/ServerScreen';
 import SkillsScreen from './src/screens/SkillsScreen';
 import DocsScreen from './src/screens/DocsScreen';
 import DocDetailScreen from './src/screens/DocDetailScreen';
+import ChatHistoryScreen from './src/screens/ChatHistoryScreen';
 import SettingsScreen from './src/screens/SettingsScreen';
 import DownloadScreen from './src/screens/DownloadScreen';
 import WelcomeScreen from './src/screens/WelcomeScreen';
@@ -22,10 +23,11 @@ import WelcomeScreen from './src/screens/WelcomeScreen';
 export type RootStackParamList = {
   Welcome: undefined;
   MainTabs: undefined;
-  Chat: { fileUri: string; fileName: string };
+  Chat: { fileUri: string; fileName: string; loadHistory?: any };
   Download: undefined;
   Settings: undefined;
   DocDetail: { title: string; sections: { title: string; content: string; tips?: string[] }[] };
+  ChatHistory: undefined;
 };
 
 export type MainTabParamList = {
@@ -176,6 +178,7 @@ function AppNavigator() {
         <Stack.Screen name="Chat" component={ChatScreen} options={{ animation: 'slide_from_right' }} />
         <Stack.Screen name="Settings" component={SettingsScreen} options={{ animation: 'slide_from_right' }} />
         <Stack.Screen name="DocDetail" component={DocDetailScreen} options={{ animation: 'slide_from_right' }} />
+        <Stack.Screen name="ChatHistory" component={ChatHistoryScreen} options={{ animation: 'slide_from_right' }} />
       </Stack.Navigator>
     </NavigationContainer>
   );

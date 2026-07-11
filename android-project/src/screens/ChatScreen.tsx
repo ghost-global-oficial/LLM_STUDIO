@@ -3,13 +3,23 @@ import {
   StyleSheet, Text, View, TextInput, TouchableOpacity, ScrollView,
   KeyboardAvoidingView, Platform, ActivityIndicator, Alert, NativeModules
 } from 'react-native';
-import { ArrowLeft, Bot, ArrowUp, Paperclip, Mic, Zap } from 'lucide-react-native';
+import { ArrowLeft, Bot, ArrowUp, Paperclip, Mic, Zap, Clock } from 'lucide-react-native';
 import { initLlama, LlamaContext } from 'llama.rn';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../App';
 import { useTheme } from '../context/ThemeContext';
 import { useSettings, useTranslation } from '../context/SettingsContext';
 import { useSkills } from '../context/SkillsContext';
+import RNFS from 'react-native-fs';
+
+const HISTORY_DIR = `${RNFS.DocumentDirectoryPath}/chat_history`;
+
+interface ChatHistoryItem {
+  id: string;
+  fileName: string;
+  messages: Message[];
+  savedAt: string;
+}
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Chat'>;
 
@@ -50,18 +60,42 @@ export default function ChatScreen({ route, navigation }: Props) {
   const { systemPrompt, performanceMode } = useSettings();
   const { t } = useTranslation();
   const { skills, executeSkill, getSystemPromptWithTools } = useSkills();
-  const { fileUri, fileName } = route.params;
+  const { fileUri, fileName, loadHistory } = route.params;
   const [modelReady, setModelReady] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [messages, setMessages] = useState<Message[]>([
-    { id: '1', text: `${t('connected')} ${fileName}. ${t('testMessage')}`, isUser: false }
-  ]);
+  const [loading, setLoading] = useState(!loadHistory);
+  const [messages, setMessages] = useState<Message[]>(
+    loadHistory ? loadHistory.messages : [{ id: '1', text: `${t('connected')} ${fileName}. ${t('testMessage')}`, isUser: false }]
+  );
   const [inputText, setInputText] = useState('');
   const [inputHeight, setInputHeight] = useState(34);
   const llamaContext = useRef<LlamaContext | null>(null);
   const scrollViewRef = useRef<ScrollView>(null);
+  const conversationId = useRef<string>(Date.now().toString());
+  const messagesRef = useRef<Message[]>([]);
+  messagesRef.current = messages;
+
+  const saveConversation = async (msgs: Message[]) => {
+    try {
+      const userMsgs = msgs.filter(m => m.isUser);
+      if (userMsgs.length === 0) return;
+      await RNFS.mkdir(HISTORY_DIR);
+      const item: ChatHistoryItem = {
+        id: conversationId.current,
+        fileName,
+        messages: msgs.filter(m => !m.isToolCall && !m.isToolResult),
+        savedAt: new Date().toISOString(),
+      };
+      await RNFS.writeFile(`${HISTORY_DIR}/${conversationId.current}.json`, JSON.stringify(item), 'utf8');
+    } catch (e) {}
+  };
 
   useEffect(() => {
+    if (!fileUri) {
+      setModelReady(false);
+      setLoading(false);
+      return;
+    }
+
     let active = true;
     const startLlamaSession = async () => {
       try {
@@ -120,6 +154,7 @@ export default function ChatScreen({ route, navigation }: Props) {
       if (llamaContext.current) {
         llamaContext.current.release().catch(() => {});
       }
+      saveConversation(messagesRef.current);
     };
   }, [fileUri]);
 
@@ -305,7 +340,10 @@ export default function ChatScreen({ route, navigation }: Props) {
   return (
     <KeyboardAvoidingView style={[styles.container, { backgroundColor: bgColor }]} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <View style={[styles.header, { backgroundColor: headerBg, borderBottomColor: headerBorder }]}>
-        <TouchableOpacity style={[styles.backBtn, { backgroundColor: isDark ? '#1E1E1E' : '#E0E0E0' }]} onPress={() => navigation.goBack()}>
+        <TouchableOpacity style={[styles.backBtn, { backgroundColor: isDark ? '#1E1E1E' : '#E0E0E0' }]} onPress={() => {
+          saveConversation(messages);
+          navigation.goBack();
+        }}>
           <ArrowLeft size={24} color={textColor} />
         </TouchableOpacity>
         <View style={styles.headerTitleContainer}>
@@ -321,7 +359,9 @@ export default function ChatScreen({ route, navigation }: Props) {
             )}
           </View>
         </View>
-        <View style={{ width: 40 }} />
+        <TouchableOpacity style={[styles.backBtn, { backgroundColor: isDark ? '#1E1E1E' : '#E0E0E0' }]} onPress={() => navigation.navigate('ChatHistory')}>
+          <Clock size={20} color={textColor} />
+        </TouchableOpacity>
       </View>
 
       <ScrollView
