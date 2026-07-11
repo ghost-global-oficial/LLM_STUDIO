@@ -82,12 +82,22 @@ export default function DownloadScreen({ navigation }: Props) {
             if (ggufFile.size) {
               totalSize = ggufFile.size;
             } else {
-              // Try to get size from cardData.safetensors or other metadata
+              // Sum sizes from all GGUF files as fallback
               for (const f of ggufFiles) {
-                if (f.size) totalSize += f.size;
+                if (f.size && f.size > 0) totalSize += f.size;
               }
             }
           }
+        }
+        // If size not found from API, try HEAD request to get Content-Length
+        if (totalSize <= 0 && downloadUrl) {
+          try {
+            const headResp = await fetch(downloadUrl, { method: 'HEAD', redirect: 'follow', signal: AbortSignal.timeout(8000) });
+            const contentLength = headResp.headers.get('content-length');
+            if (contentLength && parseInt(contentLength, 10) > 0) {
+              totalSize = parseInt(contentLength, 10);
+            }
+          } catch {}
         }
         const sizeStr = totalSize > 0
           ? (totalSize / 1024 / 1024 / 1024).toFixed(1) + ' GB'
