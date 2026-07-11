@@ -57,6 +57,7 @@ export default function ChatScreen({ route, navigation }: Props) {
     { id: '1', text: `${t('connected')} ${fileName}. ${t('testMessage')}`, isUser: false }
   ]);
   const [inputText, setInputText] = useState('');
+  const [inputHeight, setInputHeight] = useState(34);
   const llamaContext = useRef<LlamaContext | null>(null);
   const scrollViewRef = useRef<ScrollView>(null);
 
@@ -382,9 +383,13 @@ export default function ChatScreen({ route, navigation }: Props) {
              <Paperclip size={20} color={placeholderColor} />
           </TouchableOpacity>
           <TextInput
-            style={[styles.textInput, { color: textColor }]}
+            style={[styles.textInput, { color: textColor, height: Math.min(inputHeight, 120) }]}
             value={inputText}
             onChangeText={setInputText}
+            onContentSizeChange={(e) => {
+              const h = e.nativeEvent.contentSize.height;
+              setInputHeight(Math.max(34, Math.min(h, 120)));
+            }}
             placeholder={modelReady ? t('writeMessage') : t('waitLoad')}
             placeholderTextColor={placeholderColor}
             editable={modelReady && !loading}
@@ -441,7 +446,7 @@ const styles = StyleSheet.create({
   toolResultText: { fontSize: 13, lineHeight: 18, fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace' },
   inputArea: { paddingHorizontal: 16, paddingVertical: 12, paddingBottom: Platform.OS === 'ios' ? 24 : 16 },
   inputContainer: { flexDirection: 'row', alignItems: 'center', borderRadius: 24, paddingLeft: 16, paddingRight: 6, paddingVertical: 6, borderWidth: 1 },
-  textInput: { flex: 1, fontSize: 16, maxHeight: 120, minHeight: 34, paddingTop: 6, paddingBottom: 6, paddingHorizontal: 8 },
+  textInput: { flex: 1, fontSize: 16, minHeight: 34, paddingTop: 6, paddingBottom: 6, paddingHorizontal: 8 },
   attachButton: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center' },
   voiceButton: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center', marginRight: 4 },
   sendButton: { width: 34, height: 34, borderRadius: 17, backgroundColor: '#FFF', alignItems: 'center', justifyContent: 'center' },
