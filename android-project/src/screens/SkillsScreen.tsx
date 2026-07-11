@@ -302,10 +302,10 @@ export default function SkillsScreen() {
 
             <ScrollView showsVerticalScrollIndicator={false}>
               <Text style={[styles.label, { color: secondaryText }]}>{t('name')}</Text>
-              <TextInput style={[styles.input, { backgroundColor: inputBg, color: textColor, borderColor }]} value={name} onChangeText={setName} placeholder="minha_funcao" placeholderTextColor={isDark ? "#444" : "#999"} autoCapitalize="none" />
+              <TextInput style={[styles.input, { backgroundColor: inputBg, color: textColor, borderColor }]} value={name} onChangeText={setName} placeholder={t('skillNamePlaceholder')} placeholderTextColor={isDark ? "#444" : "#999"} autoCapitalize="none" />
 
               <Text style={[styles.label, { color: secondaryText }]}>{t('description')}</Text>
-              <TextInput style={[styles.input, { backgroundColor: inputBg, color: textColor, borderColor }]} value={description} onChangeText={setDescription} placeholder="O que esta skill faz" placeholderTextColor={isDark ? "#444" : "#999"} multiline />
+              <TextInput style={[styles.input, { backgroundColor: inputBg, color: textColor, borderColor }]} value={description} onChangeText={setDescription} placeholder={t('skillDescPlaceholder')} placeholderTextColor={isDark ? "#444" : "#999"} multiline />
 
               <Text style={[styles.label, { color: secondaryText }]}>{t('parameters')} ({params.length})</Text>
               {params.map((p, i) => (
@@ -316,7 +316,7 @@ export default function SkillsScreen() {
               ))}
 
               <View style={[styles.paramAddRow, { borderColor }]}>
-                <TextInput style={[styles.paramInput, { backgroundColor: inputBg, color: textColor, borderColor }]} value={paramName} onChangeText={setParamName} placeholder="nome" placeholderTextColor={isDark ? "#444" : "#999"} autoCapitalize="none" />
+                <TextInput style={[styles.paramInput, { backgroundColor: inputBg, color: textColor, borderColor }]} value={paramName} onChangeText={setParamName} placeholder={t('paramNamePlaceholder')} placeholderTextColor={isDark ? "#444" : "#999"} autoCapitalize="none" />
                 <TouchableOpacity style={[styles.typeBtn, { backgroundColor: paramType === 'string' ? '#007AFF' : inputBg, borderColor }]} onPress={() => setParamType('string')}>
                   <Text style={{ color: paramType === 'string' ? '#FFF' : textColor, fontSize: 11 }}>str</Text>
                 </TouchableOpacity>
@@ -332,7 +332,7 @@ export default function SkillsScreen() {
               <Text style={[styles.hint, { color: secondaryText }]}>{t('required')} = toggle</Text>
 
               <Text style={[styles.label, { color: secondaryText }]}>{t('code')}</Text>
-              <TextInput style={[styles.codeInput, { backgroundColor: inputBg, color: '#00FF00', borderColor }]} value={handlerCode} onChangeText={setHandlerCode} multiline autoCapitalize="none" placeholder="// params.name, params.age, etc." placeholderTextColor="#333" />
+              <TextInput style={[styles.codeInput, { backgroundColor: inputBg, color: '#00FF00', borderColor }]} value={handlerCode} onChangeText={setHandlerCode} multiline autoCapitalize="none" placeholder={t('codePlaceholder')} placeholderTextColor="#333" />
 
               <TouchableOpacity style={styles.saveButton} onPress={saveSkill}>
                 <Text style={styles.saveButtonText}>{editingSkill ? t('save') : t('createSkill')}</Text>

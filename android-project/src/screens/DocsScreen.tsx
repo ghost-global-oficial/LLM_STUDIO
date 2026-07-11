@@ -17,35 +17,35 @@ export default function DocsScreen() {
 
   const sections = [
     {
-      title: 'Modelos GGUF',
+      title: t('docGguf'),
       icon: <Cpu size={24} color="#FF9500" />,
-      content: 'Aprenda como baixar e importar modelos .gguf do Hugging Face. Recomendamos modelos Q4_K_M para melhor performance.',
+      content: t('docGgufDesc'),
       link: 'https://huggingface.co/models?search=gguf'
     },
     {
-      title: 'Servidor Local',
+      title: t('docServer'),
       icon: <Globe size={24} color="#34C759" />,
-      content: 'Como configurar o endpoint da OpenAI no seu PC/Mac para usar a inteligência do seu celular via rede local.',
-      link: '#'
+      content: t('docServerDesc'),
+      link: 'https://github.com/ghost-global-oficial/LLM_STUDIO/wiki'
     },
     {
-      title: 'Performance & RAM',
+      title: t('docPerformance'),
       icon: <Zap size={24} color="#5856D6" />,
-      content: 'Dicas sobre o uso de CPU/GPU no Android e como lidar com modelos grandes sem travar o dispositivo.',
-      link: '#'
+      content: t('docPerformanceDesc'),
+      link: 'https://github.com/ghost-global-oficial/LLM_STUDIO/wiki'
     },
     {
-      title: 'Skills (Tool Use)',
+      title: t('docSkills'),
       icon: <Rocket size={24} color="#007AFF" />,
-      content: 'Em breve: Como permitir que a IA acesse sua câmera, agenda e realize buscas na web.',
-      link: '#'
+      content: t('docSkillsDesc'),
+      link: 'https://github.com/ghost-global-oficial/LLM_STUDIO/wiki'
     }
   ];
 
   const DocCard = ({ title, icon, content, link }: any) => (
     <TouchableOpacity
       style={[styles.card, { backgroundColor: cardBg, borderColor: cardBorder }]}
-      onPress={() => link !== '#' && Linking.openURL(link)}
+      onPress={() => Linking.openURL(link)}
       activeOpacity={0.7}
     >
       <View style={styles.cardHeader}>
@@ -83,8 +83,8 @@ export default function DocsScreen() {
       ))}
 
       <View style={styles.footer}>
-        <Text style={[styles.footerText, { color: textColor }]}>LM Studio for Android v1.0.0</Text>
-        <Text style={[styles.footerSubtext, { color: secondaryText }]}>Desenvolvido com llama.rn e React Native</Text>
+        <Text style={[styles.footerText, { color: textColor }]}>LLM Studio v1.0.0</Text>
+        <Text style={[styles.footerSubtext, { color: secondaryText }]}>{t('docFooter')}</Text>
       </View>
 
       <View style={{ height: 100 }} />
