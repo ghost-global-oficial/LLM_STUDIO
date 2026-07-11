@@ -56,19 +56,6 @@ if (results.length === 0 && data.Answer) results.push(data.Answer);
 return { query: params.query, results: results.length > 0 ? results.join('\\n\\n') : 'No results found', abstract: data.AbstractText || '', source: data.AbstractURL || '' };`,
   },
   {
-    name: 'calculate',
-    description: 'Safe calculator for math expressions',
-    enabled: true,
-    icon: 'Calculator',
-    parameters: [
-      { name: 'expression', type: 'string', description: 'Math expression (e.g. 2+2*3)', required: true },
-    ],
-    handlerCode: `const expr = params.expression.replace(/[^0-9+\\-*/().% ]/g, '');
-if (!expr) throw new Error('Invalid expression');
-const result = eval(expr);
-return { expression: params.expression, result: result };`,
-  },
-  {
     name: 'read_file',
     description: 'Read the content of a local file',
     enabled: true,
