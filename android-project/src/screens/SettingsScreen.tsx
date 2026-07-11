@@ -351,7 +351,7 @@ export default function SettingsScreen({ navigation }: SettingsScreenProps) {
 
             <View style={[styles.hwItem, { borderBottomColor: isDark ? '#2A2A2A' : '#E0E0E0' }]}>
               <Text style={[styles.hwLabel, isDark ? styles.darkSecondaryText : styles.lightSecondaryText]}>llama.rn</Text>
-              <Text style={[styles.hwValue, isDark ? styles.darkText : styles.lightText]}>0.4.0</Text>
+              <Text style={[styles.hwValue, isDark ? styles.darkText : styles.lightText]}>0.12.4</Text>
             </View>
 
             <View style={[styles.hwItem, { borderBottomWidth: 0 }]}>
