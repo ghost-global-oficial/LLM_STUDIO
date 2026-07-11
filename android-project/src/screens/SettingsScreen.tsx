@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { StyleSheet, Text, View, TouchableOpacity, Switch, ScrollView, TextInput, Modal, FlatList, Platform, NativeModules } from 'react-native';
-import { Moon, Sun, ArrowLeft, ExternalLink, Globe, MessageSquare, Cpu } from 'lucide-react-native';
+import { Moon, Sun, ArrowLeft, ExternalLink, Globe, MessageSquare, Cpu, RefreshCw } from 'lucide-react-native';
 import { useTheme } from '../context/ThemeContext';
 import { useSettings, useTranslation, LANGUAGES, Language } from '../context/SettingsContext';
 
