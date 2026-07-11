@@ -79,15 +79,22 @@ export default function DownloadScreen({ navigation }: Props) {
               || ggufFiles.find((f: any) => f.rfilename.toLowerCase().includes('q4_0'))
               || ggufFiles[0];
             downloadUrl = `https://huggingface.co/${modelId}/resolve/main/${encodeURIComponent(ggufFile.rfilename)}?download=true`;
-            if (ggufFile.size) totalSize += ggufFile.size;
+            if (ggufFile.size) {
+              totalSize = ggufFile.size;
+            } else {
+              // Try to get size from cardData.safetensors or other metadata
+              for (const f of ggufFiles) {
+                if (f.size) totalSize += f.size;
+              }
+            }
           }
         }
         const sizeStr = totalSize > 0
           ? (totalSize / 1024 / 1024 / 1024).toFixed(1) + ' GB'
-          : '~2 GB';
+          : 'N/A';
         return { size: sizeStr, downloadUrl };
       } catch {
-        return { size: '~2 GB', downloadUrl: '' };
+        return { size: 'N/A', downloadUrl: '' };
       }
     };
 

@@ -108,11 +108,11 @@ class DownloadService : Service() {
 
         val progress = if (total > 0) ((downloaded * 100) / total).toInt() else 0
         val downloadedStr = formatSize(downloaded)
-        val totalStr = formatSize(total)
-        val remaining = total - downloaded
-        val remainingStr = formatSize(remaining)
+        val totalStr = if (total > 0) formatSize(total) else "?"
+        val remaining = if (total > 0) total - downloaded else 0
+        val remainingStr = if (total > 0) formatSize(remaining) else "?"
         val speedStr = formatSize(bytesPerSecond) + "/s"
-        val timeStr = formatTimeRemaining(remaining, bytesPerSecond)
+        val timeStr = if (total > 0) formatTimeRemaining(remaining, bytesPerSecond) else "Calculando..."
 
         val bigText = buildString {
             appendLine("$downloadedStr / $totalStr ($progress%)")
@@ -149,9 +149,20 @@ class DownloadService : Service() {
             connection = fileUrl.openConnection() as HttpURLConnection
             connection.connectTimeout = 30000
             connection.readTimeout = 60000
+            connection.instanceFollowRedirects = true
             connection.connect()
 
-            val totalSize = connection.contentLength.toLong()
+            var totalSize = connection.contentLength.toLong()
+            if (totalSize <= 0) {
+                val rangeHeader = connection.getHeaderField("Content-Range")
+                if (rangeHeader != null && rangeHeader.contains("/")) {
+                    val parts = rangeHeader.split("/")
+                    if (parts.size == 2) {
+                        totalSize = parts[1].trim().toLongOrNull() ?: 0
+                    }
+                }
+            }
+
             inputStream = BufferedInputStream(connection.inputStream, 8192)
             outputStream = FileOutputStream(tmpPath)
 
